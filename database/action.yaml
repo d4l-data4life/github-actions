@@ -1,0 +1,60 @@
+name: Action Setup
+description: Create or Update Database and User for a repository
+inputs:
+  repository:
+    description: Repository (create/update)
+    required: true
+  operation:
+    description: Operation (create/update)
+    required: false
+    default: create
+
+runs:
+  using: "composite"
+  steps:
+  - name: Azure CLI login
+    uses: azure/login@v1
+    with:
+      creds: ${{ secrets.AZURE_CI_CREDENTIALS }}
+
+  - name: Get admin db credentials
+    shell: bash
+    run: |
+      az keyvault secret show \
+        --vault-name kv-sensorhub \
+        -n dev--db--postgres--admin | jq '.value | fromjson' \
+        > admin-db-credentials.json
+
+  - name: Set admin credentials as ENV
+    uses: rgarcia-phi/json-to-variables@v1.1.0
+    with:
+      filename: admin-db-credentials.json
+      prefix: 'admin'
+      masked: true
+
+  - name: Get service db credentials
+    shell: bash
+    run: |
+      az keyvault secret show \
+        --vault-name kv-sensorhub \
+        -n dev--db--${{ inputs.repository }} | jq '.value | fromjson' \
+        > service-db-credentials.json
+
+  - name: Set service credentials as ENV
+    uses: rgarcia-phi/json-to-variables@v1.1.0
+    with:
+      filename: service-db-credentials.json
+      prefix: 'svc'
+      masked: true
+
+  - name: Run SQL script
+    shell: bash
+    run: ./database.sh ${{ inputs.operation }}
+    env:
+      PGDATABASE: postgres
+      PGHOST: ${{env.admin_host}}
+      DBNAME: ${{env.svc_DBName}}
+      SU_NAME: ${{env.admin_username}}
+      SU_PASSWORD: ${{env.admin_password}}
+      USERNAME: ${{env.svc_username}}
+      PASSWORD: ${{env.svc_password}}

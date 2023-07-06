@@ -1,0 +1,58 @@
+name: Deploy
+description: Deploy to sensorhub aks
+inputs:
+  repository:
+    description: Repository (create/update)
+    required: true
+  environment:
+    description: Environment (dev/staging/prod)
+    required: true
+    default: dev
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Azure CLI login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CI_CREDENTIALS }}
+
+    - uses: azure/aks-set-context@v3
+      with:
+        resource-group: rg-sensorhub-${{ inputs.environment }}
+        cluster-name: k8s-sensorhub-${{ inputs.environment }}
+
+    - name: get db secrets
+      shell: bash
+      run: |
+        az keyvault secret show \
+          --vault-name kv-sensorhub \
+          -n ${{ inputs.environment }}--db--${{ inputs.repository}} \
+          | yq -P '.value | fromjson' > secrets.yaml
+
+    - name: get common secrets
+      shell: bash
+      run: |
+        az keyvault secret show \
+          --vault-name kv-sensorhub \
+          -n ${{ inputs.environment }}--common \
+          | yq -P '.value | fromjson' >> secrets.yaml
+
+    - name: get svc secrets
+      shell: bash
+      run: |
+        az keyvault secret show \
+          --vault-name kv-sensorhub \
+          -n ${{ inputs.environment }}--${{ inputs.repository}} \
+          | yq -P '.value | fromjson' >> secrets.yaml
+
+    - name: Run deployment
+      shell: bash
+      run: make deploy
+      env:
+        SECRETS_YAML: secrets.yaml
+        ENVIRONMENT: ${{ inputs.environment }}
