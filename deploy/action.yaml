@@ -8,6 +8,8 @@ inputs:
     description: Environment (dev/staging/prod)
     required: true
     default: dev
+  azure-credentials:
+    description: Credentials used to login to azure
 
 runs:
   using: "composite"
@@ -19,7 +21,7 @@ runs:
     - name: Azure CLI login
       uses: azure/login@v1
       with:
-        creds: ${{ secrets.AZURE_CI_CREDENTIALS }}
+        creds: ${{ inputs.azure-credentials }}
 
     - uses: azure/aks-set-context@v3
       with:

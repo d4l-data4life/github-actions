@@ -4,11 +4,21 @@ inputs:
   run-code-gen:
     description: Run protobuf code generation
     required: false
-    default: 'true'
+    default: "true"
   setup-go:
     description: run setup-go action
     required: false
-    default: 'true'
+    default: "true"
+  acr-login:
+    description: login to acr
+    required: false
+    default: "false"
+  azure-credentials:
+    description: Credentials used to login to acr
+    required: false
+    default: "{}"
+
+
 runs:
   using: "composite"
   steps:
@@ -32,3 +42,24 @@ runs:
       shell: bash
       run: git config --global --add url."https://${GITHUB_USER_TOKEN}@github.com/".insteadOf "https://github.com/"
       if: ${{ inputs.setup-go  == 'true' }}
+
+    - name: Get ACR credentials
+      shell: bash
+      env:
+        CREDENTIALS: ${{ inputs.azure-credentials }}
+      run: |
+        REGISTRY_USERNAME=$(echo $CREDENTIALS | jq -r '.["clientId"]')
+        REGISTRY_PASSWORD=$(echo $CREDENTIALS | jq -r '.["clientSecret"]')
+        echo "::add-mask::$REGISTRY_USERNAME"
+        echo "::add-mask::$REGISTRY_PASSWORD"
+        echo REGISTRY_USERNAME=$REGISTRY_USERNAME >> $GITHUB_ENV
+        echo REGISTRY_PASSWORD=$REGISTRY_PASSWORD >> $GITHUB_ENV
+      if: ${{ inputs.acr-login  == 'true' }}
+
+    - name: Log into registry
+      uses: docker/login-action@v2
+      with:
+        registry: crsensorhub.azurecr.io
+        username: ${{ env.REGISTRY_USERNAME }}
+        password: ${{ env.REGISTRY_PASSWORD }}
+      if: ${{ inputs.acr-login  == 'true' }}

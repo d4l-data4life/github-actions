@@ -8,6 +8,9 @@ inputs:
     description: Operation (create/update)
     required: false
     default: create
+  azure-credentials:
+    description: Credentials used to login to azure
+    required: true
 
 runs:
   using: "composite"
@@ -15,7 +18,7 @@ runs:
   - name: Azure CLI login
     uses: azure/login@v1
     with:
-      creds: ${{ secrets.AZURE_CI_CREDENTIALS }}
+      creds: ${{ inputs.azure-credentials }}
 
   - name: Get admin db credentials
     shell: bash
