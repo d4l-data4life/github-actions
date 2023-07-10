@@ -8,6 +8,10 @@ inputs:
     description: Operation (create/update)
     required: false
     default: create
+  environment:
+    description: Environment (dev/staging/prod)
+    required: true
+    default: dev
   azure-credentials:
     description: Credentials used to login to azure
     required: true
@@ -25,7 +29,7 @@ runs:
     run: |
       az keyvault secret show \
         --vault-name kv-sensorhub \
-        -n dev--db--postgres--admin | jq '.value | fromjson' \
+        -n ${{ inputs.environment }}--db--postgres--admin | jq '.value | fromjson' \
         > admin-db-credentials.json
 
   - name: Set admin credentials as ENV
@@ -40,7 +44,7 @@ runs:
     run: |
       az keyvault secret show \
         --vault-name kv-sensorhub \
-        -n dev--db--${{ inputs.repository }} | jq '.value | fromjson' \
+        -n ${{ inputs.environment }}--db--${{ inputs.repository }} | jq '.value | fromjson' \
         > service-db-credentials.json
 
   - name: Set service credentials as ENV
