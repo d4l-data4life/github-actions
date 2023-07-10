@@ -16,6 +16,18 @@ The secret value is a JSON and its source of truth is the azure keyvault `app-se
 
 Passing secrets to actions as input parameters still leads to them being masked in the logs, as long as they were defined secrets before being used as paramters.
 
+For docker commands to work properly with the actions they need to use `docker buildx build` and get a few additional parameters:
+```makefile
+	docker buildx build \
+		--cache-to type=gha,mode=max \
+		--cache-from type=gha \
+		--load \
+		...
+```
+`--cache-*` enables the caching on github actions, without causing any problems locally (on my machine).
+`--load` is required to expose the built image to the local `docker images`, so that it can be used after being created.
+This is due to `buildx` using a different driver than the default docker one.
+
 ## Exposed Actions
 
 ### build-setup
@@ -28,20 +40,22 @@ Capabilities:
 - prepares a docker buildx build instance to be used
 - [run-code-gen] run protobuf code generation via `make generate`
 - [setup-go] run setup-go to install the required go environment an enable go mod and go build caching
+- [setup-node] run setup-node to install the node environment and run `npm ci` (with caching enabled)
 - [acr-login] login to azure container registry to push our images
 
-| Inputs            | Required  | Default | Description                                                       |
-| ----------------- | --------- | ------- | ----------------------------------------------------------------- |
-| run-code-gen      | false     | true    | Run protobuf code generation                                      |
-| setup-go          | false     | true    | Run setup-go action (golang dev env setup and caching activation) |
-| acr-login         | false     | false   | Login to ACR using azure ci user credentials                      |
-| azure-credentials | acr-login | "{}"    | Credentials for azure cli login in JSON format                    |
+| Inputs            | Required  | Default | Description                                                          |
+| ----------------- | --------- | ------- | -------------------------------------------------------------------- |
+| run-code-gen      | false     | false   | Run protobuf code generation                                         |
+| setup-go          | false     | false   | Run (setup-go)[https://github.com/actions/setup-go]                  |
+| setup-node        | false     | false   | Run (setup-node)[https://github.com/actions/setup-node] and `npm ci` |
+| acr-login         | false     | false   | Login to ACR using azure ci user credentials                         |
+| azure-credentials | acr-login | "{}"    | Credentials for azure cli login in JSON format                       |
 
 ```YAML
 - uses: gesundheitscloud/github-actions/build-setup@main
   with:
-    run-code-gen: 'false'
-    setup-go: 'false'
+    run-code-gen: 'true'
+    setup-go: 'true'
     acr-login: 'true'
     azure-credentials: ${{ secrets.AZURE_CI_CREDENTIALS }}
 ```
@@ -106,9 +120,9 @@ Capabilities:
 
 - login to Azure and get AKS credentials/config
 - get required secrets from keyvault
-    - db secrets `<environment>--db--<repository>`
-    - common secrets `<environment>--common`
-    - service secrets `<environment>--<repository>`
+  - db secrets `<environment>--db--<repository>`
+  - common secrets `<environment>--common`
+  - service secrets `<environment>--<repository>`
 - runs `make deploy`
 
 :warning: All of these secrets have to exists, be in JSON form and contain at least one attribute.

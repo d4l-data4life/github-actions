@@ -4,11 +4,15 @@ inputs:
   run-code-gen:
     description: Run protobuf code generation
     required: false
-    default: "true"
+    default: "false"
   setup-go:
     description: run setup-go action
     required: false
-    default: "true"
+    default: "false"
+  setup-node:
+    description: run setup-node action
+    required: false
+    default: "false"
   acr-login:
     description: login to acr
     required: false
@@ -42,6 +46,19 @@ runs:
       shell: bash
       run: git config --global --add url."https://${GITHUB_USER_TOKEN}@github.com/".insteadOf "https://github.com/"
       if: ${{ inputs.setup-go  == 'true' }}
+
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: npm
+        cache-dependency-path: package-lock.json
+      if: ${{ inputs.setup-node  == 'true' }}
+
+    - name: Setup Node
+      shell: bash
+      run: npm ci
+      if: ${{ inputs.setup-node  == 'true' }}
 
     - name: Get ACR credentials
       shell: bash
