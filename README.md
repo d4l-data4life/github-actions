@@ -51,7 +51,10 @@ Capabilities:
 | acr-login         | false     | false   | Login to ACR using azure ci user credentials                         |
 | azure-credentials | acr-login | "{}"    | Credentials for azure cli login in JSON format                       |
 
+Use at beginning of build job after checkout and configure as needed:
+
 ```YAML
+- uses: actions/checkout@v3
 - uses: gesundheitscloud/github-actions/build-setup@main
   with:
     run-code-gen: 'true'
@@ -68,6 +71,8 @@ Capabilities:
 
 - fetch postgres admin credentials from keyvault `<environment>--db--postgres--admin`
 - database configuration for the repository is also read from keyvault `<environment>--db--<repository>`
+  - JSON value that has to be created manually
+  - Properties: `DBName`, `Hostname`, `Port`, `password`, `username`
 - runs `database.sh` script to `create`/`update`
 
 | Inputs            | Required | Default | Description                                      |
@@ -77,7 +82,7 @@ Capabilities:
 | environment       | false    | dev     | dev/staging/prod                                 |
 | azure-credentials | true     |         | Credentials for azure cli login in JSON format   |
 
-Use by creating a `.gihub/workflows/database.yaml
+Use by creating a `.gihub/workflows/database.yaml`
 
 ```YAML
 name: Database Creation
@@ -134,7 +139,7 @@ Capabilities:
 | environment       | false    | dev     | dev/staging/prod                                 |
 | azure-credentials | true     |         | Credentials for azure cli login in JSON format   |
 
-Use by creating a `.gihub/workflows/deploy.yaml
+Use by creating a `.gihub/workflows/deploy.yaml`
 
 ```YAML
 name: Deploy
