@@ -23,10 +23,15 @@ runs:
       with:
         creds: ${{ inputs.azure-credentials }}
 
+    - name: Set up kubelogin for non-interactive login
+      uses: azure/use-kubelogin@v1
+
     - uses: azure/aks-set-context@v3
       with:
         resource-group: rg-sensorhub-${{ inputs.environment }}
         cluster-name: k8s-sensorhub-${{ inputs.environment }}
+        admin: 'false'
+        use-kubelogin: 'true'
 
     - name: get db secrets
       shell: bash
