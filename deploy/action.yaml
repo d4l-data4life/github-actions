@@ -25,6 +25,8 @@ runs:
 
     - name: Set up kubelogin for non-interactive login
       uses: azure/use-kubelogin@v1
+      with:
+        kubelogin-version: v0.0.30
 
     - uses: azure/aks-set-context@v3
       with:
