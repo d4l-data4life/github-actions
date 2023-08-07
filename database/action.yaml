@@ -56,7 +56,7 @@ runs:
 
   - name: Run SQL script
     shell: bash
-    run: ./database.sh ${{ inputs.operation }}
+    run: ${{ github.action_path }}/database.sh ${{ inputs.operation }}
     env:
       PGDATABASE: postgres
       PGHOST: ${{env.admin_host}}
