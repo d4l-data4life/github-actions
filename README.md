@@ -112,9 +112,10 @@ jobs:
     steps:
       - uses: gesundheitscloud/github-actons/database@main
         with:
+          project: sensorhub
           operation: ${{ inputs.operation }}
-          repository: research-pillars
           azure-credentials: ${{ secrets.AZURE_CI_CREDENTIALS }}
+          environment: ${{ inputs.environment }}
 ```
 
 ### deploy
@@ -168,7 +169,7 @@ jobs:
     steps:
       - uses: gesundheitscloud/github-actions/deploy@main
         with:
+          project: sensorhub
           environment: ${{ inputs.environment }}
-          repository: research-pillars
           azure-credentials: ${{ secrets.AZURE_CI_CREDENTIALS }}
 ```

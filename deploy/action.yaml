@@ -1,9 +1,12 @@
 name: Deploy
-description: Deploy to sensorhub aks
+description: Deploy to AKS
 inputs:
+  project:
+    description: Project (sensorhub/airms)
+    default: sensorhub
   repository:
-    description: Repository (create/update)
-    required: true
+    description: Repository name (obsolete, will be removed)
+    required: false
   environment:
     description: Environment (dev/staging/prod)
     required: true
@@ -28,36 +31,57 @@ runs:
       with:
         kubelogin-version: v0.0.30
 
+    - name: Set environment variables
+      shell: bash
+      run: |
+        ORG_AND_REPO=${{ github.repository }}
+        echo "REPO_NAME=${ORG_AND_REPO##*/}" >> $GITHUB_ENV
+        if [ "${{ inputs.project }}" == "sensorhub" ]; then
+          echo "RESOURCE_GROUP=rg-sensorhub-${{ inputs.environment }}" >> $GITHUB_ENV
+          echo "CLUSTER_NAME=k8s-sensorhub-${{ inputs.environment }}" >> $GITHUB_ENV
+          echo "KEY_VAULT_NAME=kv-sensorhub" >> $GITHUB_ENV
+        elif [ "${{ inputs.project }}" == "airms" ]; then
+          if [ "${{ inputs.environment }}" == "dev" ]; then
+            echo "RESOURCE_GROUP=rg-airms-dev" >> $GITHUB_ENV
+            echo "CLUSTER_NAME=airms-dev-app-k8s-cluster" >> $GITHUB_ENV
+            echo "KEY_VAULT_NAME=airms-dev-app-kv" >> $GITHUB_ENV
+          else
+            echo "RESOURCE_GROUP=mshsclinrsrch01-airms-${{ inputs.environment }}-rgp" >> $GITHUB_ENV
+            echo "CLUSTER_NAME=airms-${{ inputs.environment }}-aks" >> $GITHUB_ENV
+            echo "KEY_VAULT_NAME=airms-${{ inputs.environment }}-app-kv" >> $GITHUB_ENV
+          fi
+        fi
+
     - uses: azure/aks-set-context@v3
       with:
-        resource-group: rg-sensorhub-${{ inputs.environment }}
-        cluster-name: k8s-sensorhub-${{ inputs.environment }}
+        resource-group: ${{ env.RESOURCE_GROUP }}
+        cluster-name: ${{ env.CLUSTER_NAME }}
         admin: 'false'
         use-kubelogin: 'true'
 
     - name: get db secrets
       shell: bash
       run: |
-        az keyvault secret show \
-          --vault-name kv-sensorhub \
-          -n ${{ inputs.environment }}--db--${{ inputs.repository}} \
-          | yq -P '.value | fromjson' > secrets.yaml
+        (az keyvault secret show \
+          --vault-name ${{ env.KEY_VAULT_NAME }} \
+          --name ${{ inputs.environment }}--db--${{ env.REPO_NAME }} || true) \
+          | yq -P '.value | fromjson // ""' > secrets.yaml
 
     - name: get common secrets
       shell: bash
       run: |
-        az keyvault secret show \
-          --vault-name kv-sensorhub \
-          -n ${{ inputs.environment }}--common \
-          | yq -P '.value | fromjson' >> secrets.yaml
+        (az keyvault secret show \
+          --vault-name ${{ env.KEY_VAULT_NAME }} \
+          --name ${{ inputs.environment }}--common || true) \
+          | yq -P '.value | fromjson // ""' >> secrets.yaml
 
     - name: get svc secrets
       shell: bash
       run: |
-        az keyvault secret show \
-          --vault-name kv-sensorhub \
-          -n ${{ inputs.environment }}--${{ inputs.repository}} \
-          | yq -P '.value | fromjson' >> secrets.yaml
+        (az keyvault secret show \
+          --vault-name ${{ env.KEY_VAULT_NAME }} \
+          --name ${{ inputs.environment }}--${{ env.REPO_NAME }} || true) \
+          | yq -P '.value | fromjson // ""' >> secrets.yaml
 
     - name: Run deployment
       shell: bash

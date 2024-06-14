@@ -1,9 +1,12 @@
 name: Action Setup
 description: Create or Update Database and User for a repository
 inputs:
+  project:
+    description: Project (sensorhub/airms)
+    default: sensorhub
   repository:
-    description: Repository (create/update)
-    required: true
+    description: Repository name (obsolete, will be removed)
+    required: false
   operation:
     description: Operation (create/update)
     required: false
@@ -24,11 +27,26 @@ runs:
     with:
       creds: ${{ inputs.azure-credentials }}
 
+  - name: Set environment variables
+    shell: bash
+    run: |
+      ORG_AND_REPO=${{ github.repository }}
+      echo "REPO_NAME=${ORG_AND_REPO##*/}" >> $GITHUB_ENV
+      if [ "${{ inputs.project }}" == "sensorhub" ]; then
+        echo "KEY_VAULT_NAME=kv-sensorhub" >> $GITHUB_ENV
+      elif [ "${{ inputs.project }}" == "airms" ]; then
+        if [ "${{ inputs.environment }}" == "dev" ]; then
+          echo "KEY_VAULT_NAME=airms-dev-app-kv" >> $GITHUB_ENV
+        else
+          echo "KEY_VAULT_NAME=airms-${{ inputs.environment }}-app-kv" >> $GITHUB_ENV
+        fi
+      fi
+
   - name: Get admin db credentials
     shell: bash
     run: |
       az keyvault secret show \
-        --vault-name kv-sensorhub \
+        --vault-name ${{ env.KEY_VAULT_NAME }} \
         -n ${{ inputs.environment }}--db--postgres--admin | jq '.value | fromjson' \
         > admin-db-credentials.json
 
@@ -42,9 +60,10 @@ runs:
   - name: Get service db credentials
     shell: bash
     run: |
+      REPO_NAME=${{ github.repository }}
       az keyvault secret show \
-        --vault-name kv-sensorhub \
-        -n ${{ inputs.environment }}--db--${{ inputs.repository }} | jq '.value | fromjson' \
+        --vault-name ${{ env.KEY_VAULT_NAME }} \
+        -n ${{ inputs.environment }}--db--${{ env.REPO_NAME }} | jq '.value | fromjson' \
         > service-db-credentials.json
 
   - name: Set service credentials as ENV
