@@ -41,6 +41,7 @@ runs:
           echo "CLUSTER_NAME=k8s-sensorhub-${{ inputs.environment }}" >> $GITHUB_ENV
           echo "KEY_VAULT_NAME=kv-sensorhub" >> $GITHUB_ENV
         elif [ "${{ inputs.project }}" == "airms" ]; then
+          echo "BACKEND_CERT_NAME=airms-${{ inputs.environment }}-appgw-backend-cert" >> $GITHUB_ENV
           if [ "${{ inputs.environment }}" == "dev" ]; then
             echo "RESOURCE_GROUP=rg-airms-dev" >> $GITHUB_ENV
             echo "CLUSTER_NAME=airms-dev-app-k8s-cluster" >> $GITHUB_ENV
@@ -82,6 +83,20 @@ runs:
           --vault-name ${{ env.KEY_VAULT_NAME }} \
           --name ${{ inputs.environment }}--${{ env.REPO_NAME }} || true) \
           | yq -P '.value | fromjson // ""' >> secrets.yaml
+    
+    - name: get backend TLS key and certificate
+      shell: bash
+      run: |
+        KEY=$(az keyvault secret show \
+          --vault-name ${{ env.KEY_VAULT_NAME }} \
+          --name ${{ env.BACKEND_CERT_NAME }} \
+          | yq '.value' | base64 -d | openssl ec)
+        CERT=$(az keyvault certificate show \
+          --vault-name ${{ env.KEY_VAULT_NAME }} \
+          --name ${{ env.BACKEND_CERT_NAME }} \
+          | yq '.cer' | base64 -d | openssl x509)
+        yq -n '.BACKEND_TLS_KEY = strenv(KEY), .BACKEND_TLS_CERT = strenv(CERT)' >> secrets.yaml
+      if: ${{ env.BACKEND_CERT_NAME != '' }}
 
     - name: Run deployment
       shell: bash
