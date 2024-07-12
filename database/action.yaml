@@ -4,9 +4,6 @@ inputs:
   project:
     description: Project (sensorhub/airms)
     default: sensorhub
-  repository:
-    description: Repository name (obsolete, will be removed)
-    required: false
   operation:
     description: Operation (create/update)
     required: false

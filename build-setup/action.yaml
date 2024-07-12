@@ -13,6 +13,10 @@ inputs:
     description: run setup-node action
     required: false
     default: "false"
+  setup-yarn:
+    description: run setup-node action, but with yarn
+    required: false
+    default: "false"
   acr-login:
     description: login to acr
     required: false
@@ -39,12 +43,12 @@ runs:
       uses: actions/setup-go@v4
       with:
         go-version-file: go.mod
-      if: ${{ inputs.setup-go  == 'true' }}
+      if: ${{ inputs.setup-go == 'true' }}
 
     - name: Private Repo Setup
       shell: bash
       run: git config --global --add url."https://${GITHUB_USER_TOKEN}@github.com/".insteadOf "https://github.com/"
-      if: ${{ inputs.setup-go  == 'true' }}
+      if: ${{ inputs.setup-go == 'true' }}
 
     - name: Setup Node
       uses: actions/setup-node@v3
@@ -52,12 +56,25 @@ runs:
         node-version: 18
         cache: npm
         cache-dependency-path: package-lock.json
-      if: ${{ inputs.setup-node  == 'true' }}
+      if: ${{ inputs.setup-node == 'true' }}
 
-    - name: Setup Node
+    - name: Install Node dependencies
       shell: bash
       run: npm ci
-      if: ${{ inputs.setup-node  == 'true' }}
+      if: ${{ inputs.setup-node == 'true' }}
+
+    - name: Setup Yarn
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: yarn
+        cache-dependency-path: yarn.lock
+      if: ${{ inputs.setup-yarn == 'true' }}
+
+    - name: Install Yarn dependencies
+      shell: bash
+      run: yarn install
+      if: ${{ inputs.setup-yarn == 'true' }}
 
     - name: Get ACR credentials
       shell: bash
@@ -72,7 +89,7 @@ runs:
         echo REGISTRY=$REGISTRY >> $GITHUB_ENV
         echo REGISTRY_USERNAME=$REGISTRY_USERNAME >> $GITHUB_ENV
         echo REGISTRY_PASSWORD=$REGISTRY_PASSWORD >> $GITHUB_ENV
-      if: ${{ inputs.acr-login  == 'true' }}
+      if: ${{ inputs.acr-login == 'true' }}
 
     - name: Log into registry
       uses: docker/login-action@v2
@@ -80,4 +97,4 @@ runs:
         registry: ${{ env.REGISTRY }}
         username: ${{ env.REGISTRY_USERNAME }}
         password: ${{ env.REGISTRY_PASSWORD }}
-      if: ${{ inputs.acr-login  == 'true' }}
+      if: ${{ inputs.acr-login == 'true' }}

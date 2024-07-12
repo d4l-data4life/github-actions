@@ -4,9 +4,6 @@ inputs:
   project:
     description: Project (sensorhub/airms)
     default: sensorhub
-  repository:
-    description: Repository name (obsolete, will be removed)
-    required: false
   environment:
     description: Environment (dev/staging/prod)
     required: true
@@ -83,7 +80,7 @@ runs:
           --vault-name ${{ env.KEY_VAULT_NAME }} \
           --name ${{ inputs.environment }}--${{ env.REPO_NAME }} || true) \
           | yq -P '.value | fromjson // ""' >> secrets.yaml
-    
+
     - name: get backend TLS key and certificate
       shell: bash
       run: |
