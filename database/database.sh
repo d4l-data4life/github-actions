@@ -19,6 +19,7 @@ esac
 
 
 test -n "${DBNAME}" || { echo "DBNAME is empty - check credentials in Vault"; exit 2; };
+test -n "${DBSCHEMA}" || { echo "DBSCHEMA is empty - check credentials in Vault"; exit 2; };
 test -n "${USERNAME}" || { echo "USERNAME is empty - check credentials in Vault"; exit 2; };
 test -n "${PASSWORD}" || { echo "PASSWORD is empty - check credentials in Vault"; exit 2; };
 test -n "${SU_NAME}" || { echo "SU_NAME is empty - check credentials in Vault"; exit 2; };
@@ -37,13 +38,17 @@ fi
 
 if [ "${OPERATION}" = "create" ]; then
     PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -c "CREATE ROLE \"${USERNAME}\" CREATEDB LOGIN PASSWORD '${PASSWORD}';" && \
-        PGPASSWORD=${PASSWORD} psql -U "${USERNAME}" -c "CREATE DATABASE \"${DBNAME}\";" && \
+        PGPASSWORD="${PASSWORD}"    psql -U "${USERNAME}" -c "CREATE DATABASE \"${DBNAME}\";" && \
+        PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -d "${DBNAME}" -c "GRANT USAGE ON SCHEMA \"${DBSCHEMA}\" TO \"${USERNAME}\";" && \
+        PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -d "${DBNAME}" -c "GRANT CREATE ON SCHEMA \"${DBSCHEMA}\" TO \"${USERNAME}\";"
     # return early with the last seen exit code - otherwise the next if [...] would return 0
     return $?
 fi
 
 if [ "${OPERATION}" = "update" ]; then
     PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -c "ALTER ROLE \"${USERNAME}\" CREATEDB LOGIN PASSWORD '${PASSWORD}';" && \
-        PGPASSWORD=${SU_PASSWORD} psql -U "${SU_NAME}" -c "ALTER DATABASE \"${DBNAME}\" OWNER TO \"${USERNAME}\";" && \
+        PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -c "ALTER DATABASE \"${DBNAME}\" OWNER TO \"${USERNAME}\";" && \
+        PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -d "${DBNAME}" -c "GRANT USAGE ON SCHEMA \"${DBSCHEMA}\" TO \"${USERNAME}\";" && \
+        PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -d "${DBNAME}" -c "GRANT CREATE ON SCHEMA \"${DBSCHEMA}\" TO \"${USERNAME}\";"
     return $?
 fi
