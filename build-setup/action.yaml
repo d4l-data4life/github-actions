@@ -25,6 +25,10 @@ inputs:
     description: Credentials used to login to acr
     required: false
     default: "{}"
+  signing-key-passphrase:
+    description: Passphrase for delegation signing key
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -81,6 +85,7 @@ runs:
       env:
         CREDENTIALS: ${{ inputs.azure-credentials }}
       run: |
+        set +H
         REGISTRY=$(echo $CREDENTIALS | jq -r '.containerRegistry // "crsensorhub.azurecr.io" ')
         REGISTRY_USERNAME=$(echo $CREDENTIALS | jq -r '.clientId')
         REGISTRY_PASSWORD=$(echo $CREDENTIALS | jq -r '.clientSecret')
@@ -89,6 +94,7 @@ runs:
         echo REGISTRY=$REGISTRY >> $GITHUB_ENV
         echo REGISTRY_USERNAME=$REGISTRY_USERNAME >> $GITHUB_ENV
         echo REGISTRY_PASSWORD=$REGISTRY_PASSWORD >> $GITHUB_ENV
+        echo DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE=${{ inputs.signing-key-passphrase }} >> $GITHUB_ENV
       if: ${{ inputs.acr-login == 'true' }}
 
     - name: Log into registry
@@ -98,3 +104,23 @@ runs:
         username: ${{ env.REGISTRY_USERNAME }}
         password: ${{ env.REGISTRY_PASSWORD }}
       if: ${{ inputs.acr-login == 'true' }}
+
+    - name: Azure CLI login
+      uses: azure/login@v1
+      with:
+        creds: ${{ inputs.azure-credentials }}
+      if: ${{ inputs.signing-key-passphrase != '' }}
+
+    - name: Get image signing key
+      shell: bash
+      run: |
+        RUNNER_SECRET=$(az keyvault secret show \
+          --vault-name airms-dev-app-kv \
+          --name runner-signing-key  | yq .value)
+        RUNNER_KEY=$(echo $RUNNER_SECRET | yq .runner_key)
+        mkdir -p ~/.docker/trust/private
+        echo $RUNNER_SECRET | yq .runner_key_content | base64 -d > ~/.docker/trust/private/$RUNNER_KEY
+        chmod 600 ~/.docker/trust/private/$RUNNER_KEY
+        docker trust key load --name runner ~/.docker/trust/private/$RUNNER_KEY
+      if: ${{ inputs.signing-key-passphrase != '' }}
+        
