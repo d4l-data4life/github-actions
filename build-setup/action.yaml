@@ -44,7 +44,7 @@ runs:
       if: ${{ inputs.run-code-gen == 'true' }}
 
     - name: Setup Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
       if: ${{ inputs.setup-go == 'true' }}
@@ -123,4 +123,4 @@ runs:
         chmod 600 ~/.docker/trust/private/$RUNNER_KEY
         docker trust key load --name runner ~/.docker/trust/private/$RUNNER_KEY
       if: ${{ inputs.signing-key-passphrase != '' }}
-        
+
