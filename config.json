@@ -5,12 +5,12 @@
     "key_vault_name": "kv-sensorhub"
   },
   "airms": {
-    "backend_cert_name": "airms-{environment}-appgw-backend-cert",
     "environments": {
       "dev": {
         "resource_group": "rg-airms-dev",
         "cluster_name": "airms-dev-app-k8s-cluster",
-        "key_vault_name": "airms-dev-app-kv"
+        "key_vault_name": "airms-dev-app-kv",
+        "backend_cert_name": "airms-{environment}-appgw-backend-cert"
       },
       "prod": {
         "resource_group": "mshsclinrsrch01-airms-rgp",
