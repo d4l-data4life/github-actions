@@ -52,7 +52,12 @@ runs:
         else
           # Project has simple config (like sensorhub)
           jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ${{ github.action_path }}/../config.json >> $GITHUB_ENV
-        fi 
+        fi
+
+        # Output the environment variables
+        echo "RESOURCE_GROUP: ${{ env.RESOURCE_GROUP }}"
+        echo "CLUSTER_NAME: ${{ env.CLUSTER_NAME }}"
+        echo "KEY_VAULT_NAME: ${{ env.KEY_VAULT_NAME }}"
 
     - uses: azure/aks-set-context@v3
       with:
