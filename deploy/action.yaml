@@ -39,19 +39,19 @@ runs:
         ENV="${{ inputs.environment }}"
         
         # Check if project has environment-specific configuration
-        HAS_ENVIRONMENTS=$(jq -r "has(\"environments\")" ../config.json --arg project "$PROJECT" '.[$project]')
+        HAS_ENVIRONMENTS=$(jq -r "has(\"environments\")" ${{ github.action_path }}/../config.json --arg project "$PROJECT" '.[$project]')
         
         if [ "$HAS_ENVIRONMENTS" == "true" ]; then
           # Project has environment-specific config (like airms)
           # Get environment-specific config with fallback to default
-          ENV_CONFIG=$(jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project].environments[$env] // .[$project].environments.default' ../config.json)
+          ENV_CONFIG=$(jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project].environments[$env] // .[$project].environments.default' ${{ github.action_path }}/../config.json)
           echo "$ENV_CONFIG" | jq -r 'to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; "'$ENV'"))"' >> $GITHUB_ENV
           
           # Add any project-level config (like backend_cert_name for airms)
-          jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries | map(select(.key != "environments")) | .[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ../config.json >> $GITHUB_ENV
+          jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries | map(select(.key != "environments")) | .[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ${{ github.action_path }}/../config.json >> $GITHUB_ENV
         else
           # Project has simple config (like sensorhub)
-          jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ../config.json >> $GITHUB_ENV
+          jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ${{ github.action_path }}/../config.json >> $GITHUB_ENV
         fi 
 
     - uses: azure/aks-set-context@v3
