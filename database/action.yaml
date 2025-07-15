@@ -41,19 +41,14 @@ runs:
         # Project has environment-specific config (like airms)
         # Get environment-specific config with fallback to default
         ENV_CONFIG=$(jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project].environments[$env] // .[$project].environments.default' ${{ github.action_path }}/../config.json)
-        echo "$ENV_CONFIG" | jq -r 'to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; "'$ENV'"))"' >> $GITHUB_ENV
+        echo "$ENV_CONFIG" | jq -r 'to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; "'$ENV'"))"' | tee -a $GITHUB_ENV
         
         # Add any project-level config (like backend_cert_name for airms)
-        jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries | map(select(.key != "environments")) | .[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ${{ github.action_path }}/../config.json >> $GITHUB_ENV
+        jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries | map(select(.key != "environments")) | .[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ${{ github.action_path }}/../config.json  | tee -a $GITHUB_ENV
       else
         # Project has simple config (like sensorhub)
-        jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ${{ github.action_path }}/../config.json >> $GITHUB_ENV
+        jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ${{ github.action_path }}/../config.json | tee -a $GITHUB_ENV
       fi
-
-      # Output the environment variables
-      echo "RESOURCE_GROUP: ${{ env.RESOURCE_GROUP }}"
-      echo "CLUSTER_NAME: ${{ env.CLUSTER_NAME }}"
-      echo "KEY_VAULT_NAME: ${{ env.KEY_VAULT_NAME }}"
 
   - name: Get admin db credentials
     shell: bash
