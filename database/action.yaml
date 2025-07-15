@@ -25,10 +25,30 @@ runs:
       creds: ${{ inputs.azure-credentials }}
 
   - name: Set environment variables
-    uses: ./.github/actions/shared/set-env
-    with:
-      project: ${{ inputs.project }}
-      environment: ${{ inputs.environment }}
+    shell: bash
+    run: |
+      ORG_AND_REPO=${{ github.repository }}
+      echo "REPO_NAME=${ORG_AND_REPO##*/}" >> $GITHUB_ENV
+      
+      # Load configuration from JSON and set environment variables
+      PROJECT="${{ inputs.project }}"
+      ENV="${{ inputs.environment }}"
+      
+      # Check if project has environment-specific configuration
+      HAS_ENVIRONMENTS=$(jq -r "has(\"environments\")" ../config.json --arg project "$PROJECT" '.[$project]')
+      
+      if [ "$HAS_ENVIRONMENTS" == "true" ]; then
+        # Project has environment-specific config (like airms)
+        # Get environment-specific config with fallback to default
+        ENV_CONFIG=$(jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project].environments[$env] // .[$project].environments.default' ../config.json)
+        echo "$ENV_CONFIG" | jq -r 'to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; "'$ENV'"))"' >> $GITHUB_ENV
+        
+        # Add any project-level config (like backend_cert_name for airms)
+        jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries | map(select(.key != "environments")) | .[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ../config.json >> $GITHUB_ENV
+      else
+        # Project has simple config (like sensorhub)
+        jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ../config.json >> $GITHUB_ENV
+      fi 
 
   - name: Get admin db credentials
     shell: bash
