@@ -29,7 +29,7 @@ runs:
         kubelogin-version: v0.0.30
 
     - name: Set environment variables
-      uses: ./shared/set-env
+      uses: ./.github/actions/shared/set-env
       with:
         project: ${{ inputs.project }}
         environment: ${{ inputs.environment }}

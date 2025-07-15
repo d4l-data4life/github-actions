@@ -25,7 +25,7 @@ runs:
       creds: ${{ inputs.azure-credentials }}
 
   - name: Set environment variables
-    uses: ./shared/set-env
+    uses: ./.github/actions/shared/set-env
     with:
       project: ${{ inputs.project }}
       environment: ${{ inputs.environment }}
