@@ -25,19 +25,10 @@ runs:
       creds: ${{ inputs.azure-credentials }}
 
   - name: Set environment variables
-    shell: bash
-    run: |
-      ORG_AND_REPO=${{ github.repository }}
-      echo "REPO_NAME=${ORG_AND_REPO##*/}" >> $GITHUB_ENV
-      if [ "${{ inputs.project }}" == "sensorhub" ]; then
-        echo "KEY_VAULT_NAME=kv-sensorhub" >> $GITHUB_ENV
-      elif [ "${{ inputs.project }}" == "airms" ]; then
-        if [ "${{ inputs.environment }}" == "dev" ]; then
-          echo "KEY_VAULT_NAME=airms-dev-app-kv" >> $GITHUB_ENV
-        else
-          echo "KEY_VAULT_NAME=airms-${{ inputs.environment }}-app-kv" >> $GITHUB_ENV
-        fi
-      fi
+    uses: ./shared/set-env
+    with:
+      project: ${{ inputs.project }}
+      environment: ${{ inputs.environment }}
 
   - name: Get admin db credentials
     shell: bash

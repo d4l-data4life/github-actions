@@ -29,26 +29,10 @@ runs:
         kubelogin-version: v0.0.30
 
     - name: Set environment variables
-      shell: bash
-      run: |
-        ORG_AND_REPO=${{ github.repository }}
-        echo "REPO_NAME=${ORG_AND_REPO##*/}" >> $GITHUB_ENV
-        if [ "${{ inputs.project }}" == "sensorhub" ]; then
-          echo "RESOURCE_GROUP=rg-sensorhub-${{ inputs.environment }}" >> $GITHUB_ENV
-          echo "CLUSTER_NAME=k8s-sensorhub-${{ inputs.environment }}" >> $GITHUB_ENV
-          echo "KEY_VAULT_NAME=kv-sensorhub" >> $GITHUB_ENV
-        elif [ "${{ inputs.project }}" == "airms" ]; then
-          echo "BACKEND_CERT_NAME=airms-${{ inputs.environment }}-appgw-backend-cert" >> $GITHUB_ENV
-          if [ "${{ inputs.environment }}" == "dev" ]; then
-            echo "RESOURCE_GROUP=rg-airms-dev" >> $GITHUB_ENV
-            echo "CLUSTER_NAME=airms-dev-app-k8s-cluster" >> $GITHUB_ENV
-            echo "KEY_VAULT_NAME=airms-dev-app-kv" >> $GITHUB_ENV
-          else
-            echo "RESOURCE_GROUP=mshsclinrsrch01-airms-${{ inputs.environment }}-rgp" >> $GITHUB_ENV
-            echo "CLUSTER_NAME=airms-${{ inputs.environment }}-aks" >> $GITHUB_ENV
-            echo "KEY_VAULT_NAME=airms-${{ inputs.environment }}-app-kv" >> $GITHUB_ENV
-          fi
-        fi
+      uses: ./shared/set-env
+      with:
+        project: ${{ inputs.project }}
+        environment: ${{ inputs.environment }}
 
     - uses: azure/aks-set-context@v3
       with:
