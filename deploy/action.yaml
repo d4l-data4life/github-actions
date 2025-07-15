@@ -39,7 +39,7 @@ runs:
         ENV="${{ inputs.environment }}"
         
         # Check if project has environment-specific configuration
-        HAS_ENVIRONMENTS=$(jq -r "has(\"environments\")" ${{ github.action_path }}/../config.json --arg project "$PROJECT" '.[$project]')
+        HAS_ENVIRONMENTS=$(jq -r --arg project "$PROJECT" '.[$project] | has("environments")' ${{ github.action_path }}/../config.json)
         
         if [ "$HAS_ENVIRONMENTS" == "true" ]; then
           # Project has environment-specific config (like airms)
