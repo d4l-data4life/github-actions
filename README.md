@@ -54,6 +54,7 @@ Capabilities:
 | setup-yarn        | false     | false   | Run (setup-node)[https://github.com/actions/setup-node] and `yarn install` |
 | acr-login         | false     | false   | Login to ACR using azure ci user credentials                               |
 | azure-credentials | acr-login | "{}"    | Credentials for azure cli login in JSON format                             |
+| node-version      | false     | "18"    | Specify the node version to use                                            |
 
 Use at beginning of build job after checkout and configure as needed:
 
@@ -138,11 +139,11 @@ Capabilities:
 
 :warning: All of these secrets have to exists, be in JSON form and contain at least one attribute.
 
-| Inputs            | Required | Default   | Description                                      |
-| ----------------- | -------- | --------- | ------------------------------------------------ |
-| project           | true     | sensorhub | Project the action is used for                   |
-| environment       | false    | dev       | dev/staging/prod                                 |
-| azure-credentials | true     |           | Credentials for azure cli login in JSON format   |
+| Inputs            | Required | Default   | Description                                    |
+| ----------------- | -------- | --------- | ---------------------------------------------- |
+| project           | true     | sensorhub | Project the action is used for                 |
+| environment       | false    | dev       | dev/staging/prod                               |
+| azure-credentials | true     |           | Credentials for azure cli login in JSON format |
 
 Use by creating a `.gihub/workflows/deploy.yaml`
 
