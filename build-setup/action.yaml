@@ -13,6 +13,10 @@ inputs:
     description: run setup-node action
     required: false
     default: "false"
+  node-version:
+    description: Node.js version to use
+    required: false
+    default: "18"
   setup-yarn:
     description: run setup-node action, but with yarn
     required: false
@@ -62,7 +66,7 @@ runs:
     - name: Setup Node
       uses: actions/setup-node@v3
       with:
-        node-version: 18
+        node-version: ${{ inputs.node-version }}
         cache: npm
         cache-dependency-path: package-lock.json
       if: ${{ inputs.setup-node == 'true' }}
@@ -75,7 +79,7 @@ runs:
     - name: Setup Yarn
       uses: actions/setup-node@v3
       with:
-        node-version: 18
+        node-version: ${{ inputs.node-version }}
         cache: yarn
         cache-dependency-path: yarn.lock
       if: ${{ inputs.setup-yarn == 'true' }}
@@ -128,4 +132,3 @@ runs:
         chmod 600 ~/.docker/trust/private/$RUNNER_KEY
         docker trust key load --name runner ~/.docker/trust/private/$RUNNER_KEY
       if: ${{ inputs.signing-key-passphrase != '' }}
-
