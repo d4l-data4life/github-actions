@@ -19,7 +19,7 @@ esac
 
 
 test -n "${DBNAME}" || { echo "DBNAME is empty - check credentials in Vault"; exit 2; };
-test -n "${DBSCHEMA}" || { echo "DBSCHEMA is empty - check credentials in Vault"; exit 2; };
+test -n "${DBSCHEMA}" || DBSCHEMA="public"
 test -n "${USERNAME}" || { echo "USERNAME is empty - check credentials in Vault"; exit 2; };
 test -n "${PASSWORD}" || { echo "PASSWORD is empty - check credentials in Vault"; exit 2; };
 test -n "${SU_NAME}" || { echo "SU_NAME is empty - check credentials in Vault"; exit 2; };
