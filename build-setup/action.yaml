@@ -42,9 +42,9 @@ runs:
   using: "composite"
   steps:
     - name: Setup GitHub Action Docker cache
-      uses: crazy-max/ghaction-github-runtime@v2
+      uses: crazy-max/ghaction-github-runtime@v3
     - name: Boot a buildx builder
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
       if: ${{ inputs.disable-docker-cache != 'true' }}
 
     - name: Protobuf code generation
@@ -53,7 +53,7 @@ runs:
       if: ${{ inputs.run-code-gen == 'true' }}
 
     - name: Setup Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version-file: go.mod
       if: ${{ inputs.setup-go == 'true' }}
@@ -64,7 +64,7 @@ runs:
       if: ${{ inputs.setup-go == 'true' }}
 
     - name: Setup Node
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
         cache: npm
@@ -77,7 +77,7 @@ runs:
       if: ${{ inputs.setup-node == 'true' }}
 
     - name: Setup Yarn
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
         cache: yarn
@@ -107,7 +107,7 @@ runs:
       if: ${{ inputs.acr-login == 'true' }}
 
     - name: Log into registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ env.REGISTRY_USERNAME }}
@@ -115,7 +115,7 @@ runs:
       if: ${{ inputs.acr-login == 'true' }}
 
     - name: Azure CLI login
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
         creds: ${{ inputs.azure-credentials }}
       if: ${{ inputs.signing-key-passphrase != '' }}
