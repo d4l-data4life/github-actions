@@ -52,6 +52,7 @@ Capabilities:
 | setup-go          | false     | false   | Run (setup-go)[https://github.com/actions/setup-go]                        |
 | setup-node        | false     | false   | Run (setup-node)[https://github.com/actions/setup-node] and `npm ci`       |
 | setup-yarn        | false     | false   | Run (setup-node)[https://github.com/actions/setup-node] and `yarn install` |
+| setup-pnpm        | false     | false   | Run (setup-node)[https://github.com/actions/setup-node] and `pnpm install` |
 | acr-login         | false     | false   | Login to ACR using azure ci user credentials                               |
 | azure-credentials | acr-login | "{}"    | Credentials for azure cli login in JSON format                             |
 | node-version      | false     | "18"    | Specify the node version to use                                            |

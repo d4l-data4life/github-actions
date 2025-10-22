@@ -21,6 +21,10 @@ inputs:
     description: run setup-node action, but with yarn
     required: false
     default: "false"
+  setup-pnpm:
+    description: run setup-node action, but with pnpm
+    required: false
+    default: "false"
   acr-login:
     description: login to acr
     required: false
@@ -86,8 +90,21 @@ runs:
 
     - name: Install Yarn dependencies
       shell: bash
-      run: yarn install
+      run: yarn --frozen-lockfile
       if: ${{ inputs.setup-yarn == 'true' }}
+
+    - name: Setup pnpm
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+      if: ${{ inputs.setup-pnpm == 'true' }}
+
+    - name: Install pnpm dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+      if: ${{ inputs.setup-pnpm == 'true' }}
 
     - name: Get ACR credentials
       shell: bash
