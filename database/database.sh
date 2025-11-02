@@ -40,8 +40,8 @@ fi
 
 if [ "${OPERATION}" = "create" ]; then
     PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -c "CREATE ROLE \"${USERNAME}\" CREATEDB LOGIN PASSWORD '${PASSWORD}';" && \
-        PGPASSWORD="${PASSWORD}" psql -U "${USERNAME}" -c "CREATE DATABASE \"${DBNAME}\";" && \
-        PGPASSWORD="${PASSWORD}" psql -U "${USERNAME}" -d "${DBNAME}" -c "CREATE SCHEMA \"${DBSCHEMA}\";" && \
+        PGPASSWORD="${PASSWORD}" psql -U "${USERNAME}" -c "CREATE DATABASE IF NOT EXISTS \"${DBNAME}\";" && \
+        PGPASSWORD="${PASSWORD}" psql -U "${USERNAME}" -d "${DBNAME}" -c "CREATE SCHEMA IF NOT EXISTS \"${DBSCHEMA}\";" && \
         PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -d "${DBNAME}" -c "GRANT USAGE ON SCHEMA \"${DBSCHEMA}\" TO \"${USERNAME}\";" && \
         PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -d "${DBNAME}" -c "GRANT CREATE ON SCHEMA \"${DBSCHEMA}\" TO \"${USERNAME}\";"
     # return early with the last seen exit code - otherwise the next if [...] would return 0
