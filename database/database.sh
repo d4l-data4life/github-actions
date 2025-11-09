@@ -39,7 +39,21 @@ if [ "${OPERATION}" = "list" ]; then
 fi
 
 if [ "${OPERATION}" = "create" ]; then
-    PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -c "CREATE ROLE \"${USERNAME}\" CREATEDB LOGIN PASSWORD '${PASSWORD}';" && \
+    PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -c "
+DO
+\$do\$
+BEGIN
+   IF EXISTS (
+      SELECT FROM pg_catalog.pg_roles
+      WHERE  rolname = '${USERNAME}') THEN
+
+      RAISE NOTICE 'Role \"${USERNAME}\" already exists. Skipping.';
+   ELSE
+      CREATE ROLE \"${USERNAME}\" CREATEDB LOGIN PASSWORD '${PASSWORD}';
+   END IF;
+END
+\$do\$;
+" && \
         PGPASSWORD="${PASSWORD}" psql -U "${USERNAME}" -c "CREATE DATABASE IF NOT EXISTS \"${DBNAME}\";" && \
         PGPASSWORD="${PASSWORD}" psql -U "${USERNAME}" -d "${DBNAME}" -c "CREATE SCHEMA IF NOT EXISTS \"${DBSCHEMA}\";" && \
         PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -d "${DBNAME}" -c "GRANT USAGE ON SCHEMA \"${DBSCHEMA}\" TO \"${USERNAME}\";" && \
