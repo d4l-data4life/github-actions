@@ -54,7 +54,10 @@ BEGIN
 END
 \$do\$;
 " && \
-        PGPASSWORD="${PASSWORD}" psql -U "${USERNAME}" -c "CREATE DATABASE IF NOT EXISTS \"${DBNAME}\";" && \
+        {
+          PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -tc "SELECT 1 FROM pg_database WHERE datname = '${DBNAME}'" | grep -q 1 || \
+          PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -c "CREATE DATABASE \"${DBNAME}\";"
+        } && \
         PGPASSWORD="${PASSWORD}" psql -U "${USERNAME}" -d "${DBNAME}" -c "CREATE SCHEMA IF NOT EXISTS \"${DBSCHEMA}\";" && \
         PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -d "${DBNAME}" -c "GRANT USAGE ON SCHEMA \"${DBSCHEMA}\" TO \"${USERNAME}\";" && \
         PGPASSWORD="${SU_PASSWORD}" psql -U "${SU_NAME}" -d "${DBNAME}" -c "GRANT CREATE ON SCHEMA \"${DBSCHEMA}\" TO \"${USERNAME}\";"
