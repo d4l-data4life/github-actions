@@ -12,6 +12,12 @@
         "key_vault_name": "airms-dev-app-kv",
         "backend_cert_name": "airms-{environment}-appgw-backend-cert"
       },
+      "pentest": {
+        "resource_group": "rg-airms-pentest",
+        "cluster_name": "airms-pentest-app-k8s-cluster",
+        "key_vault_name": "airms-pentest-app-kv",
+        "backend_cert_name": "airms-{environment}-appgw-backend-cert"
+      },
       "prod": {
         "resource_group": "mshsclinrsrch01-airms-rgp",
         "cluster_name": "airms-aks",
