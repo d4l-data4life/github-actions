@@ -18,6 +18,15 @@ runs:
       with:
         fetch-depth: 0
 
+    - name: Get ACR credentials
+      shell: bash
+      env:
+        CREDENTIALS: ${{ inputs.azure-credentials }}
+      run: |
+        set +H
+        REGISTRY=$(echo $CREDENTIALS | jq -r '.containerRegistry // "crsensorhub.azurecr.io" ')
+        echo REGISTRY=$REGISTRY >> $GITHUB_ENV
+
     - name: Azure CLI login
       uses: azure/login@v2
       with:
