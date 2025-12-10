@@ -101,7 +101,7 @@ runs:
       if: ${{ inputs.setup-pnpm == 'true' }}
 
     - name: Setup pnpm
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm

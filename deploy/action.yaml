@@ -19,7 +19,7 @@ runs:
         fetch-depth: 0
 
     - name: Azure CLI login
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
         creds: ${{ inputs.azure-credentials }}
 
