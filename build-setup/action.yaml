@@ -44,16 +44,22 @@ inputs:
   docker-cache-registry:
     description: URL of the docker cache (e.g. docker-cache.example.com:80)
     required: false
-    default: "example.com"
+    default: ""
 
 runs:
   using: "composite"
   steps:
+    - name: Set DOCKER_CACHE_REGISTRY environment variable
+      shell: bash
+      run: |
+        echo "DOCKER_CACHE_CONFIG=--cache-to type=registry,ref=${{ inputs.docker-cache-registry }}/${{ github.repository }}:buildcache --cache-from type=registry,ref=${{ inputs.docker-cache-registry }}/${{ github.repository }}:buildcache" >> $GITHUB_ENV
+      if: ${{ inputs.disable-docker-cache != 'true' && inputs.docker-cache-registry != '' }}
+
     - name: Setup GitHub Action Docker cache
       uses: crazy-max/ghaction-github-runtime@v3
 
     - name: Boot a buildx builder
-      uses: docker/setup-buildx-action@v4
+      uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
         buildkitd-config-inline: |
