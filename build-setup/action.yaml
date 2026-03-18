@@ -41,15 +41,26 @@ inputs:
     description: Disable docker cache
     required: false
     default: "false"
+  docker-cache-registry:
+    description: URL of the docker cache (e.g. docker-cache.example.com:80)
+    required: false
+    default: "example.com"
 
 runs:
   using: "composite"
   steps:
     - name: Setup GitHub Action Docker cache
       uses: crazy-max/ghaction-github-runtime@v3
+
     - name: Boot a buildx builder
       uses: docker/setup-buildx-action@v3
       if: ${{ inputs.disable-docker-cache != 'true' }}
+      with:
+        driver-opts: network=host
+        buildkitd-config-inline: |
+          [registry."${{ inputs.docker-cache-registry }}"]
+            http = true
+            insecure = true
 
     - name: Protobuf code generation
       shell: bash
