@@ -53,14 +53,14 @@ runs:
       uses: crazy-max/ghaction-github-runtime@v3
 
     - name: Boot a buildx builder
-      uses: docker/setup-buildx-action@v3
-      if: ${{ inputs.disable-docker-cache != 'true' }}
+      uses: docker/setup-buildx-action@v4
       with:
         driver-opts: network=host
         buildkitd-config-inline: |
           [registry."${{ inputs.docker-cache-registry }}"]
             http = true
             insecure = true
+      if: ${{ inputs.disable-docker-cache != 'true' }}
 
     - name: Protobuf code generation
       shell: bash
