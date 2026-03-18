@@ -9,9 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- build-setup: allow to specify a custom docker cache registry
-- DOCKER_CACHE_CONFIG environment variable is set to be used with `docker buildx build ${DOCKER_CACHE_CONFIG}`
-
 ### Changed
 
 ### Deprecated
@@ -21,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## [v1.1.0] - 2026-03-18
+
+### Added
+
+- build-setup: allow to specify a custom docker cache registry
+- DOCKER_CACHE_CONFIG environment variable is set to be used with `docker buildx build ${DOCKER_CACHE_CONFIG}`
 
 ## [v1.0.3] - 2025-12-10
 
@@ -43,10 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.1.0] - 2025-06-29
 
-- Initial release
-
-[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.1.0...HEAD
+[v1.1.0]: https://github.com/d4l-data4life/github-actions/compare/v1.0.3...v1.1.0
 [v1.0.3]: https://github.com/d4l-data4life/github-actions/compare/v1.0.2...v1.0.3
 [v1.0.2]: https://github.com/d4l-data4life/github-actions/compare/v1.0.1...v1.0.2
-[v1.0.1]: https://github.com/d4l-data4life/github-actions/compare/v1.0.0...v1.0.1
-[v1.0.0]: https://github.com/d4l-data4life/github-actions/releases/tag/v1.0.0
+[v1.0.1]: https://github.com/d4l-data4life/github-actions/compare/v0.1.0...v1.0.1
+[v0.1.0]: https://github.com/d4l-data4life/github-actions/releases/tag/v0.1.0
