@@ -49,7 +49,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Set DOCKER_CACHE_REGISTRY environment variable
+    - name: Set DOCKER_CACHE_CONFIG environment variable
       shell: bash
       run: |
         echo "DOCKER_CACHE_CONFIG=--cache-to type=registry,ref=${{ inputs.docker-cache-registry }}/${{ github.repository }}:buildcache --cache-from type=registry,ref=${{ inputs.docker-cache-registry }}/${{ github.repository }}:buildcache" >> $GITHUB_ENV
