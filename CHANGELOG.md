@@ -22,6 +22,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [v1.0.3] - 2025-12-10
+
+### Fixed
+
+- `REGISTRY` variable wasn't set in deploy workflow
+- downgrade to setup-node@v4 to not depend on node24
+
+## [v1.0.2] - 2025-07-15
+
+### Fixed
+
+- Moved `backend_cert_name` from airms project-wide scope to airms sandbox, as it's only defined there yet
+
+## [v1.0.1] - 2025-07-15
+
+### Fixed
+
+- fix Key Vault address for airms prod
+
+## [v0.1.0] - 2025-06-29
+
+- Initial release
+
 [Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.0.3...HEAD
 [v1.0.3]: https://github.com/d4l-data4life/github-actions/compare/v1.0.2...v1.0.3
 [v1.0.2]: https://github.com/d4l-data4life/github-actions/compare/v1.0.1...v1.0.2
