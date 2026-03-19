@@ -52,7 +52,7 @@ runs:
     - name: Set DOCKER_CACHE_CONFIG environment variable
       shell: bash
       run: |
-        echo "DOCKER_CACHE_CONFIG=--cache-to type=registry,ref=${{ inputs.docker-cache-registry }}/${{ github.repository }}:buildcache --cache-from type=registry,ref=${{ inputs.docker-cache-registry }}/${{ github.repository }}:buildcache,mode=max" >> $GITHUB_ENV
+        echo "DOCKER_CACHE_CONFIG=--cache-from type=registry,ref=${{ inputs.docker-cache-registry }}/${{ github.repository }}:buildcache --cache-to type=registry,ref=${{ inputs.docker-cache-registry }}/${{ github.repository }}:buildcache,mode=max" >> $GITHUB_ENV
       if: ${{ inputs.disable-docker-cache != 'true' && inputs.docker-cache-registry != '' }}
 
     - name: Setup GitHub Action Docker cache
