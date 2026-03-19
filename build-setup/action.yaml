@@ -58,7 +58,7 @@ runs:
     - name: Setup GitHub Action Docker cache
       uses: crazy-max/ghaction-github-runtime@v3
 
-    - name: Boot a buildx builder
+    - name: Boot a buildx builder (docker cache registry)
       uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
@@ -66,7 +66,13 @@ runs:
           [registry."${{ inputs.docker-cache-registry }}"]
             http = true
             insecure = true
-      if: ${{ inputs.disable-docker-cache != 'true' }}
+      if: ${{ inputs.disable-docker-cache != 'true' && inputs.docker-cache-registry != '' }}
+
+    - name: Boot a buildx builder
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver-opts: network=host
+      if: ${{ inputs.disable-docker-cache != 'true' && inputs.docker-cache-registry == '' }}
 
     - name: Protobuf code generation
       shell: bash
