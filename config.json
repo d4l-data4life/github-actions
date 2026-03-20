@@ -23,24 +23,15 @@
         "cluster_name": "airms-aks",
         "key_vault_name": "airms-app-kv"
       },
-      "default": {
-        "resource_group": "mshsclinrsrch01-airms-{environment}-rgp",
-        "cluster_name": "airms-{environment}-aks",
-        "key_vault_name": "airms-{environment}-app-kv"
-      }
-    }
-  },
-  "airms-public": {
-    "environments": {
-      "prod": {
+      "prod-pub": {
         "resource_group": "mshsclinrsrch01-airms-pub-rgp",
         "cluster_name": "airms-pub-aks",
         "key_vault_name": "airms-pub-app-kv"
       },
       "default": {
-        "resource_group": "mshsclinrsrch01-airms-{environment}-pub-rgp",
-        "cluster_name": "airms-{environment}-pub-aks",
-        "key_vault_name": "airms-{environment}-pub-app-kv"
+        "resource_group": "mshsclinrsrch01-airms-{environment}-rgp",
+        "cluster_name": "airms-{environment}-aks",
+        "key_vault_name": "airms-{environment}-app-kv"
       }
     }
   }
