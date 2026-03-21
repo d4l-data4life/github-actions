@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- add support for public app tiers
-
 ### Changed
 
 ### Deprecated
@@ -20,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## [v1.2.0] - 2026-03-21
+
+### Added
+
+- add support for public app tiers
 
 ## [v1.1.0] - 2026-03-18
 
@@ -49,7 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.1.0] - 2025-06-29
 
-[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.2.0...HEAD
+[v1.2.0]: https://github.com/d4l-data4life/github-actions/compare/v1.1.0...v1.2.0
 [v1.1.0]: https://github.com/d4l-data4life/github-actions/compare/v1.0.3...v1.1.0
 [v1.0.3]: https://github.com/d4l-data4life/github-actions/compare/v1.0.2...v1.0.3
 [v1.0.2]: https://github.com/d4l-data4life/github-actions/compare/v1.0.1...v1.0.2
