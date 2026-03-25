@@ -1,15 +1,20 @@
 name: Deploy
-description: Deploy to AKS
+description: Deploy to Kubernetes (AKS or a cluster via kubeconfig)
 inputs:
   project:
-    description: Project (sensorhub/airms)
+    description: Project (sensorhub/airms/office-ber)
     default: sensorhub
   environment:
     description: Environment (dev/staging/prod)
     required: true
     default: dev
   azure-credentials:
-    description: Credentials used to login to azure
+    description: Credentials used to login to Azure (required for AKS and/or Key Vault)
+  kubeconfig:
+    description: >
+      Raw kubeconfig YAML for the target cluster. When set, cluster access uses this instead of AKS.
+      For environments that declare kubeconfig_secret in config.json, pass the matching repository secret
+      (e.g. secrets.OFFICE_BER_DEV_KUBECONFIG).
 
 runs:
   using: "composite"
@@ -18,44 +23,25 @@ runs:
       with:
         fetch-depth: 0
 
-    - name: Get ACR credentials
-      shell: bash
-      env:
-        CREDENTIALS: ${{ inputs.azure-credentials }}
-      run: |
-        set +H
-        REGISTRY=$(echo $CREDENTIALS | jq -r '.containerRegistry // "crsensorhub.azurecr.io" ')
-        echo REGISTRY=$REGISTRY >> $GITHUB_ENV
-
-    - name: Azure CLI login
-      uses: azure/login@v2
-      with:
-        creds: ${{ inputs.azure-credentials }}
-
-    - name: Set up kubelogin for non-interactive login
-      uses: azure/use-kubelogin@v1
-      with:
-        kubelogin-version: v0.0.30
-
     - name: Set environment variables
       shell: bash
       run: |
         ORG_AND_REPO=${{ github.repository }}
         echo "REPO_NAME=${ORG_AND_REPO##*/}" >> $GITHUB_ENV
-        
+
         # Load configuration from JSON and set environment variables
         PROJECT="${{ inputs.project }}"
         ENV="${{ inputs.environment }}"
-        
+
         # Check if project has environment-specific configuration
         HAS_ENVIRONMENTS=$(jq -r --arg project "$PROJECT" '.[$project] | has("environments")' ${{ github.action_path }}/../config.json)
-        
+
         if [ "$HAS_ENVIRONMENTS" == "true" ]; then
           # Project has environment-specific config (like airms)
           # Get environment-specific config with fallback to default
           ENV_CONFIG=$(jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project].environments[$env] // .[$project].environments.default' ${{ github.action_path }}/../config.json)
           echo "$ENV_CONFIG" | jq -r 'to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; "'$ENV'"))"' | tee -a $GITHUB_ENV
-          
+
           # Add any project-level config (like backend_cert_name for airms)
           jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries | map(select(.key != "environments")) | .[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ${{ github.action_path }}/../config.json  | tee -a $GITHUB_ENV
         else
@@ -63,7 +49,42 @@ runs:
           jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' ${{ github.action_path }}/../config.json | tee -a $GITHUB_ENV
         fi
 
+    - name: Get ACR credentials
+      shell: bash
+      env:
+        CREDENTIALS: ${{ inputs.azure-credentials }}
+      run: |
+        set +H
+        CREDENTIALS_JSON="${CREDENTIALS:-{}}"
+        REGISTRY=$(echo "$CREDENTIALS_JSON" | jq -r '.containerRegistry // "crsensorhub.azurecr.io" ')
+        echo REGISTRY=$REGISTRY >> $GITHUB_ENV
+
+    - name: Azure CLI login
+      if: ${{ inputs.kubeconfig == '' }}
+      uses: azure/login@v2
+      with:
+        creds: ${{ inputs.azure-credentials }}
+
+    - name: Set up kubelogin for non-interactive login
+      if: ${{ inputs.kubeconfig == '' }}
+      uses: azure/use-kubelogin@v1
+      with:
+        kubelogin-version: v0.0.30
+
+    - name: Configure kubectl (kubeconfig secret)
+      if: ${{ inputs.kubeconfig != '' }}
+      shell: bash
+      env:
+        KUBECONFIG_CONTENT: ${{ inputs.kubeconfig }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/kube-deploy/.kube"
+        printf '%s' "$KUBECONFIG_CONTENT" > "$RUNNER_TEMP/kube-deploy/.kube/config"
+        chmod 600 "$RUNNER_TEMP/kube-deploy/.kube/config"
+        echo "KUBECONFIG=$RUNNER_TEMP/kube-deploy/.kube/config" >> "$GITHUB_ENV"
+
     - uses: azure/aks-set-context@v3
+      if: ${{ inputs.kubeconfig == '' }}
       with:
         resource-group: ${{ env.RESOURCE_GROUP }}
         cluster-name: ${{ env.CLUSTER_NAME }}
@@ -95,6 +116,7 @@ runs:
           | yq -P '.value | fromjson // ""' >> secrets.yaml
 
     - name: get backend TLS key and certificate
+      if: ${{ env.BACKEND_CERT_NAME != '' }}
       shell: bash
       run: |
         KEY=$(az keyvault secret show \
@@ -106,7 +128,6 @@ runs:
           --name ${{ env.BACKEND_CERT_NAME }} \
           | yq '.cer' | base64 -d | openssl x509)
         yq -n '.BACKEND_TLS_KEY = strenv(KEY), .BACKEND_TLS_CERT = strenv(CERT)' >> secrets.yaml
-      if: ${{ env.BACKEND_CERT_NAME != '' }}
 
     - name: Run deployment
       shell: bash

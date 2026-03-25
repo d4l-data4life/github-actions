@@ -34,5 +34,10 @@
         "key_vault_name": "airms-{environment}-app-kv"
       }
     }
+  },
+  "office-ber": {
+    "resource_group": "rg-office-ber-{environment}",
+    "kubeconfig_secret": "OFFICE_BER_{ENVIRONMENT}_KUBECONFIG",
+    "key_vault_name": "office-ber-{environment}-kv"
   }
-} 
+}
