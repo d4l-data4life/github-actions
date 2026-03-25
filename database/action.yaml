@@ -2,7 +2,7 @@ name: Action Setup
 description: Create or Update Database and User for a repository
 inputs:
   project:
-    description: Project (sensorhub/airms)
+    description: Project key from config.json (for example sensorhub/airms/office-ber)
     default: sensorhub
   operation:
     description: Operation (create/update)
@@ -35,20 +35,28 @@ runs:
       ENV="${{ inputs.environment }}"
       ENV_UPPER=$(echo "$ENV" | tr '[:lower:]' '[:upper:]')
       
+      CONFIG_PATH="${{ github.action_path }}/../config.json"
+
+      # Fail early with a clear message when the project key is missing.
+      if ! jq -e --arg project "$PROJECT" '.[$project] != null' "$CONFIG_PATH" >/dev/null; then
+        echo "::error::Project '$PROJECT' not found in config.json"
+        exit 1
+      fi
+
       # Check if project has environment-specific configuration
-      HAS_ENVIRONMENTS=$(jq -r --arg project "$PROJECT" '.[$project] | has("environments")' ${{ github.action_path }}/../config.json)
+      HAS_ENVIRONMENTS=$(jq -r --arg project "$PROJECT" '.[$project] | has("environments")' "$CONFIG_PATH")
       
       if [ "$HAS_ENVIRONMENTS" == "true" ]; then
         # Project has environment-specific config (like airms)
         # Get environment-specific config with fallback to default
-        ENV_CONFIG=$(jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project].environments[$env] // .[$project].environments.default' ${{ github.action_path }}/../config.json)
-        echo "$ENV_CONFIG" | jq -r 'to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; "'$ENV'"))"' | gsub("{ENVIRONMENT}"; "'$ENV_UPPER'"))"' | tee -a $GITHUB_ENV
+        ENV_CONFIG=$(jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project].environments[$env] // .[$project].environments.default' "$CONFIG_PATH")
+        echo "$ENV_CONFIG" | jq -r --arg env "$ENV" --arg env_upper "$ENV_UPPER" 'to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env) | gsub("{ENVIRONMENT}"; $env_upper))"' | tee -a $GITHUB_ENV
         
         # Add any project-level config (like backend_cert_name for airms)
-        jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries | map(select(.key != "environments")) | .[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' | gsub("{ENVIRONMENT}"; "'$ENV_UPPER'"))"' ${{ github.action_path }}/../config.json  | tee -a $GITHUB_ENV
+        jq -r --arg project "$PROJECT" --arg env "$ENV" --arg env_upper "$ENV_UPPER" '.[$project] | to_entries | map(select(.key != "environments")) | .[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env) | gsub("{ENVIRONMENT}"; $env_upper))"' "$CONFIG_PATH" | tee -a $GITHUB_ENV
       else
         # Project has simple config (like sensorhub)
-        jq -r --arg project "$PROJECT" --arg env "$ENV" '.[$project] | to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env))"' | gsub("{ENVIRONMENT}"; "'$ENV_UPPER'"))"' ${{ github.action_path }}/../config.json | tee -a $GITHUB_ENV
+        jq -r --arg project "$PROJECT" --arg env "$ENV" --arg env_upper "$ENV_UPPER" '.[$project] | to_entries[] | "\(.key | ascii_upcase)=\(.value | gsub("{environment}"; $env) | gsub("{ENVIRONMENT}"; $env_upper))"' "$CONFIG_PATH" | tee -a $GITHUB_ENV
       fi
 
   - name: Get admin db credentials
