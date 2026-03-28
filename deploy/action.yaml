@@ -56,7 +56,7 @@ runs:
         echo REGISTRY=$REGISTRY >> $GITHUB_ENV
 
     - name: Azure CLI login
-      if: ${{ inputs.kubeconfig == '' }}
+      if: ${{ inputs.azure-credentials != '' }}
       uses: azure/login@v2
       with:
         creds: ${{ inputs.azure-credentials }}
