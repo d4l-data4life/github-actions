@@ -153,21 +153,10 @@ runs:
         echo DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE=${{ inputs.signing-key-passphrase }} >> $GITHUB_ENV
       if: ${{ inputs.azure-credentials != '' }}
 
-    - name: Prepare registry login endpoint
-      id: registry-login-config
-      shell: bash
-      run: |
-        LOGIN_REGISTRY="${REGISTRY}"
-        if [[ "${REGISTRY}" != *"://"* && "${REGISTRY}" == *:* && "${REGISTRY}" != *":443" ]]; then
-          LOGIN_REGISTRY="http://${REGISTRY}"
-        fi
-        echo "LOGIN_REGISTRY=${LOGIN_REGISTRY}" >> "$GITHUB_ENV"
-      if: ${{ inputs.acr-login == 'true' }}
-
     - name: Log into registry
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.LOGIN_REGISTRY }}
+        registry: ${{ env.REGISTRY }}
         username: ${{ env.REGISTRY_USERNAME }}
         password: ${{ env.REGISTRY_PASSWORD }}
       if: ${{ inputs.acr-login == 'true' }}

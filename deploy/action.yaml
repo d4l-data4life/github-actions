@@ -11,10 +11,7 @@ inputs:
   azure-credentials:
     description: Credentials used to login to Azure (required for AKS and/or Key Vault)
   kubeconfig:
-    description: >
-      Raw kubeconfig YAML for the target cluster. When set, cluster access uses this instead of AKS.
-      For environments that declare kubeconfig_secret in config.json, pass the matching repository secret
-      (e.g. secrets.OFFICE_BER_DEV_KUBECONFIG).
+    description: Raw kubeconfig YAML for the target cluster. When set, cluster access uses this instead of AKS.
 
 runs:
   using: "composite"
