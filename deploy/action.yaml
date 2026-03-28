@@ -52,8 +52,7 @@ runs:
         CREDENTIALS: ${{ inputs.azure-credentials }}
       run: |
         set +H
-        CREDENTIALS_JSON="${CREDENTIALS:-{}}"
-        REGISTRY=$(echo "$CREDENTIALS_JSON" | jq -r '.containerRegistry // "crsensorhub.azurecr.io" ')
+        REGISTRY=$(echo $CREDENTIALS | jq -r '.containerRegistry // "crsensorhub.azurecr.io" ')
         echo REGISTRY=$REGISTRY >> $GITHUB_ENV
 
     - name: Azure CLI login
