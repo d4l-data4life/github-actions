@@ -7,36 +7,47 @@
   "airms": {
     "environments": {
       "dev": {
-        "resource_group": "rg-airms-dev",
-        "cluster_name": "airms-dev-app-k8s-cluster",
-        "key_vault_name": "airms-dev-app-kv",
-        "backend_cert_name": "airms-{environment}-appgw-backend-cert"
+        "resource_group": "rg-airms-{environment}",
+        "cluster_name": "airms-{environment}-app-k8s-cluster",
+        "key_vault_name": "airms-{environment}-app-kv",
+        "backend_cert_name": "airms-{environment}-appgw-backend-cert",
+        "postgres_hostname": "airms-{environment}-app-pg.postgres.database.azure.com"
+      },
+      "dev-pub": {
+        "resource_group": "rg-airms-{environment}",
+        "cluster_name": "airms-{environment}-app-k8s-cluster",
+        "key_vault_name": "airms-{environment}-app-kv",
+        "postgres_hostname": "airms-{environment}-app-pg.postgres.database.azure.com"
       },
       "pentest": {
-        "resource_group": "rg-airms-pentest",
-        "cluster_name": "airms-pentest-app-k8s-cluster",
-        "key_vault_name": "airms-pentest-app-kv",
+        "resource_group": "rg-airms-{environment}",
+        "cluster_name": "airms-{environment}-app-k8s-cluster",
+        "key_vault_name": "airms-{environment}-app-kv",
         "backend_cert_name": "airms-{environment}-appgw-backend-cert"
       },
       "prod": {
         "resource_group": "mshsclinrsrch01-airms-rgp",
         "cluster_name": "airms-aks",
-        "key_vault_name": "airms-app-kv"
+        "key_vault_name": "airms-app-kv",
+        "postgres_hostname": "airms-postgresflex.postgres.database.azure.com"
       },
       "prod-pub": {
         "resource_group": "mshsclinrsrch01-airms-pub-rgp",
         "cluster_name": "airms-pub-aks",
-        "key_vault_name": "airms-pub-app-kv"
+        "key_vault_name": "airms-pub-app-kv",
+        "postgres_hostname": "airms-pub-postgresflex.postgres.database.azure.com"
       },
       "default": {
         "resource_group": "mshsclinrsrch01-airms-{environment}-rgp",
         "cluster_name": "airms-{environment}-aks",
-        "key_vault_name": "airms-{environment}-app-kv"
+        "key_vault_name": "airms-{environment}-app-kv",
+        "postgres_hostname": "airms-{environment}-postgresflex.postgres.database.azure.com"
       }
     }
   },
   "office-ber": {
     "resource_group": "rg-office-ber",
-    "key_vault_name": "office-ber-{environment}-kv"
+    "key_vault_name": "office-ber-{environment}-kv",
+    "postgres_hostname": "ber-{environment}-postgres"
   }
 }
