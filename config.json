@@ -37,6 +37,6 @@
   },
   "office-ber": {
     "resource_group": "rg-office-ber",
-    "key_vault_name": "office-ber-kv"
+    "key_vault_name": "office-ber-{environment}-kv"
   }
 }
