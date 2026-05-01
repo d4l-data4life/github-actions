@@ -148,11 +148,24 @@ for i in $(seq 0 $((COUNT - 1))); do
   elif [ "$(echo "$ITEM" | yq 'has("preset")')" = "true" ]; then
     OVERWRITE=$(echo "$ITEM" | yq '.overwrite // "false"')
     NAME_PATH=$(echo "$ITEM" | yq '.name')
-    VALUE=$(echo "$ITEM" | yq '.value')
+    FROM_ENV=$(echo "$ITEM" | yq '.["from-env"]')
 
-    # Mask immediately — the value was injected by the caller and must never appear in logs.
+    # Read the value from the environment variable named by from-env.
+    # This avoids YAML injection: arbitrary secret values (containing : { } # " etc.)
+    # cannot be safely embedded in a YAML block scalar, but env vars are always safe.
+    VALUE="${!FROM_ENV}"
+
+    # Empty value → always skip, regardless of overwrite.
+    if [ -z "$VALUE" ]; then
+      echo "::notice::Env var '$FROM_ENV' is empty — skipping preset '$NAME_PATH'."
+      continue
+    fi
+
+    # Mask immediately so the value never appears in any subsequent log output.
     echo "::add-mask::$VALUE"
 
+    # stage_update respects the overwrite flag: if the key already exists and
+    # overwrite is false it will skip; if overwrite is true it will replace it.
     read -r PRE_SECRET PRE_JSON_KEY <<< "$(resolve_path "$NAME_PATH")"
     stage_update "$PRE_SECRET" "$PRE_JSON_KEY" "$VALUE" "$OVERWRITE"
 
