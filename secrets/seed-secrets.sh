@@ -41,14 +41,19 @@ resolve_path() {
 
 # Fetch the existing JSON object from a KV secret (defaulting to {}),
 # set the given key to the given value, and write the result back.
+# Pass overwrite=true (5th arg) to replace an existing key; otherwise the key is skipped.
 update_kv_secret() {
-  local kv="$1" secret="$2" json_key="$3" value="$4"
+  local kv="$1" secret="$2" json_key="$3" value="$4" overwrite="${5:-false}"
   local existing
   existing=$(az keyvault secret show \
     --vault-name "$kv" --name "$secret" \
     --query 'value' -o tsv 2>/dev/null || echo '')
   if [ -z "$existing" ] || ! echo "$existing" | jq empty 2>/dev/null; then
     existing='{}'
+  fi
+  if [ "$overwrite" != "true" ] && echo "$existing" | jq -e --arg k "$json_key" 'has($k)' >/dev/null 2>&1; then
+    echo "::notice::Key '$json_key' in secret '$secret' already exists — skipping. Set overwrite: true to regenerate."
+    return 0
   fi
   local updated
   updated=$(echo "$existing" | jq --arg k "$json_key" --arg v "$value" '.[$k] = $v')
@@ -66,8 +71,23 @@ for i in $(seq 0 $((COUNT - 1))); do
   # ── rsa-key ────────────────────────────────────────────────────────────────
   if [ "$(echo "$ITEM" | yq 'has("rsa-key")')" = "true" ]; then
     LENGTH=$(echo "$ITEM" | yq '.length // 2048')
+    OVERWRITE=$(echo "$ITEM" | yq '.overwrite // "false"')
     PRIVATE_KEY_PATH=$(echo "$ITEM" | yq '.["private-key"]')
     PUBLIC_KEY_PATH=$(echo  "$ITEM" | yq '.["public-key"]')
+
+    read -r PRIV_SECRET PRIV_JSON_KEY <<< "$(resolve_path "$PRIVATE_KEY_PATH")"
+
+    # Skip key generation entirely when not overwriting and the private key already exists,
+    # since the public key must remain paired with the private key.
+    if [ "$OVERWRITE" != "true" ]; then
+      PRIV_EXISTING=$(az keyvault secret show \
+        --vault-name "$KV_NAME" --name "$PRIV_SECRET" \
+        --query 'value' -o tsv 2>/dev/null || echo '')
+      if echo "$PRIV_EXISTING" | jq -e --arg k "$PRIV_JSON_KEY" 'has($k)' >/dev/null 2>&1; then
+        echo "::notice::RSA key '$PRIV_JSON_KEY' in secret '$PRIV_SECRET' already exists — skipping. Set overwrite: true to regenerate."
+        continue
+      fi
+    fi
 
     KEY_DIR=$(mktemp -d)
     openssl genpkey -out "$KEY_DIR/private.pem" -algorithm RSA \
@@ -80,15 +100,15 @@ for i in $(seq 0 $((COUNT - 1))); do
     echo "::add-mask::$PRIVATE_KEY"
     rm -rf "$KEY_DIR"
 
-    read -r PRIV_SECRET PRIV_JSON_KEY <<< "$(resolve_path "$PRIVATE_KEY_PATH")"
-    update_kv_secret "$KV_NAME" "$PRIV_SECRET" "$PRIV_JSON_KEY" "$PRIVATE_KEY"
+    update_kv_secret "$KV_NAME" "$PRIV_SECRET" "$PRIV_JSON_KEY" "$PRIVATE_KEY" "$OVERWRITE"
 
     read -r PUB_SECRET PUB_JSON_KEY <<< "$(resolve_path "$PUBLIC_KEY_PATH")"
-    update_kv_secret "$KV_NAME" "$PUB_SECRET" "$PUB_JSON_KEY" "$PUBLIC_KEY"
+    update_kv_secret "$KV_NAME" "$PUB_SECRET" "$PUB_JSON_KEY" "$PUBLIC_KEY" "$OVERWRITE"
 
   # ── random ─────────────────────────────────────────────────────────────────
   elif [ "$(echo "$ITEM" | yq 'has("random")')" = "true" ]; then
     LENGTH=$(echo "$ITEM" | yq '.length // 32')
+    OVERWRITE=$(echo "$ITEM" | yq '.overwrite // "false"')
     ENCODING=$(echo "$ITEM" | yq '.encoding // "hex"')
     NAME_PATH=$(echo "$ITEM" | yq '.name')
 
@@ -103,11 +123,12 @@ for i in $(seq 0 $((COUNT - 1))); do
     echo "::add-mask::$VALUE"
 
     read -r RND_SECRET RND_JSON_KEY <<< "$(resolve_path "$NAME_PATH")"
-    update_kv_secret "$KV_NAME" "$RND_SECRET" "$RND_JSON_KEY" "$VALUE"
+    update_kv_secret "$KV_NAME" "$RND_SECRET" "$RND_JSON_KEY" "$VALUE" "$OVERWRITE"
 
   # ── password ───────────────────────────────────────────────────────────────
   elif [ "$(echo "$ITEM" | yq 'has("password")')" = "true" ]; then
     LENGTH=$(echo "$ITEM" | yq '.length // 20')
+    OVERWRITE=$(echo "$ITEM" | yq '.overwrite // "false"')
     NAME_PATH=$(echo "$ITEM" | yq '.name')
 
     # Retry loop: each iteration may yield fewer than LENGTH alphanumeric
@@ -119,6 +140,6 @@ for i in $(seq 0 $((COUNT - 1))); do
     echo "::add-mask::$PASSWORD"
 
     read -r PWD_SECRET PWD_JSON_KEY <<< "$(resolve_path "$NAME_PATH")"
-    update_kv_secret "$KV_NAME" "$PWD_SECRET" "$PWD_JSON_KEY" "$PASSWORD"
+    update_kv_secret "$KV_NAME" "$PWD_SECRET" "$PWD_JSON_KEY" "$PASSWORD" "$OVERWRITE"
   fi
 done
