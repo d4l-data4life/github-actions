@@ -144,6 +144,18 @@ for i in $(seq 0 $((COUNT - 1))); do
     read -r RND_SECRET RND_JSON_KEY <<< "$(resolve_path "$NAME_PATH")"
     stage_update "$RND_SECRET" "$RND_JSON_KEY" "$VALUE" "$OVERWRITE"
 
+  # ── preset ────────────────────────────────────────────────────────────────
+  elif [ "$(echo "$ITEM" | yq 'has("preset")')" = "true" ]; then
+    OVERWRITE=$(echo "$ITEM" | yq '.overwrite // "false"')
+    NAME_PATH=$(echo "$ITEM" | yq '.name')
+    VALUE=$(echo "$ITEM" | yq '.value')
+
+    # Mask immediately — the value was injected by the caller and must never appear in logs.
+    echo "::add-mask::$VALUE"
+
+    read -r PRE_SECRET PRE_JSON_KEY <<< "$(resolve_path "$NAME_PATH")"
+    stage_update "$PRE_SECRET" "$PRE_JSON_KEY" "$VALUE" "$OVERWRITE"
+
   # ── password ──────────────────────────────────────────────────────────────
   elif [ "$(echo "$ITEM" | yq 'has("password")')" = "true" ]; then
     LENGTH=$(echo "$ITEM" | yq '.length // 20')
