@@ -9,23 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Generic secret slots `secret-1` … `secret-5`: pass up to five `${{ secrets.* }}` values via `with:` and reference them with `from-input: secret-N` in the `secrets` YAML. GitHub masks inputs sourced from secrets; `env:` on the calling step is logged in plaintext.
-
-### Changed
-
-- Preset secrets: use `from-input: secret-N` + `with: secret-N: ${{ secrets.* }}` instead of `from-env` + `env:` on the calling step
-
-### Deprecated
-
-- `from-env` combined with `env:` on the calling `uses:` step (leaks value in composite sub-step logs); use `from-input` with a generic slot instead
-
-### Removed
-
-### Fixed
+- Generic secret slots `secret-1` … `secret-5` for preset secrets; pass via `with: secret-N: ${{ secrets.* }}` and reference with `from-input: secret-N`
 
 ### Security
 
-- Prevent preset secret values from appearing in workflow logs when callers previously used `env:` on the composite action step
+- Mask preset slot values early so they don't appear in subsequent step logs; `env:` on the calling step still leaks — use `with:` + a registered GitHub secret instead
 
 ## [v1.4.0] - 2026-05-01
 
