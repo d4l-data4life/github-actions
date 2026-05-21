@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [v1.5.0] - 2026-05-21
+
+### Added
+
 - Generic secret slots `secret-1` … `secret-5` for preset secrets; pass via `with: secret-N: ${{ secrets.* }}` and reference with `from-input: secret-N`
 
 ### Security
@@ -61,7 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.1.0] - 2025-06-29
 
-[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.5.0...HEAD
+[v1.5.0]: https://github.com/d4l-data4life/github-actions/compare/v1.4.0...v1.5.0
 [v1.4.0]: https://github.com/d4l-data4life/github-actions/compare/v1.3.0...v1.4.0
 [v1.3.0]: https://github.com/d4l-data4life/github-actions/compare/v1.2.0...v1.3.0
 [v1.2.0]: https://github.com/d4l-data4life/github-actions/compare/v1.1.0...v1.2.0
