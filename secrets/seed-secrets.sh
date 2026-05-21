@@ -20,6 +20,12 @@
 #     name:        path for the password value   (e.g. common/MY_PASSWORD)
 #     overwrite:   regenerate even if the key already exists (optional, default: false)
 #
+#   - preset:
+#     from-input: action input id (preferred; pass secret via with:)
+#     from-env:   env var name (legacy; do not set via env: on the calling uses: step)
+#     name:       path for the value
+#     overwrite:  replace if key exists (optional, default: false)
+#
 #   - random:
 #     length:      number of random bytes to generate (optional, default: 32)
 #     encoding:    output encoding — 'hex' or 'base64' (optional, default: hex)
@@ -146,11 +152,23 @@ for i in $(seq 0 $((COUNT - 1))); do
 
   # ── preset ────────────────────────────────────────────────────────────────
   elif [ "$(echo "$ITEM" | yq 'has("preset")')" = "true" ]; then
-    OVERWRITE=$(echo "$ITEM" | yq '.overwrite // "false"')
-    NAME_PATH=$(echo "$ITEM" | yq '.name')
-    FROM_ENV=$(echo "$ITEM" | yq '.["from-env"]')
+    OVERWRITE=$(echo "$ITEM" | yq '.overwrite // .preset.overwrite // "false"')
+    NAME_PATH=$(echo "$ITEM" | yq '.name // .preset.name')
+    FROM_INPUT=$(echo "$ITEM" | yq '.["from-input"] // .preset["from-input"] // ""')
+    FROM_ENV=$(echo "$ITEM" | yq '.["from-env"] // .preset["from-env"] // ""')
 
-    # Read the value from the environment variable named by from-env.
+    # Prefer from-input (action with: + secrets.*) over from-env. Values passed via
+    # env: on the calling uses: step are printed unmasked in every composite sub-step.
+    if [ -n "$FROM_INPUT" ] && [ "$FROM_INPUT" != "null" ]; then
+      FROM_ENV="INPUT_$(echo "$FROM_INPUT" | tr '[:lower:]' '[:upper:]' | tr '-' '_')"
+    fi
+
+    if [ -z "$FROM_ENV" ] || [ "$FROM_ENV" = "null" ]; then
+      echo "::error::preset requires from-input or from-env."
+      exit 1
+    fi
+
+    # Read the value from the environment variable (INPUT_* for from-input).
     # This avoids YAML injection: arbitrary secret values (containing : { } # " etc.)
     # cannot be safely embedded in a YAML block scalar, but env vars are always safe.
     VALUE="${!FROM_ENV}"
