@@ -213,6 +213,171 @@ for i in $(seq 0 $((COUNT - 1))); do
 
     read -r PWD_SECRET PWD_JSON_KEY <<< "$(resolve_path "$NAME_PATH")"
     stage_update "$PWD_SECRET" "$PWD_JSON_KEY" "$PASSWORD" "$OVERWRITE"
+
+  # ── mtls-ca ───────────────────────────────────────────────────────────────
+  # Generates a self-signed root CA (private key + certificate) and stores both
+  # in Key Vault. Subsequent 'mtls-cert' entries in the same run sign their
+  # leaves using this CA. Idempotent — skipped if the key already exists.
+  elif [ "$(echo "$ITEM" | yq 'has("mtls-ca")')" = "true" ]; then
+    LENGTH=$(echo  "$ITEM" | yq '.length  // 4096')
+    DAYS=$(echo    "$ITEM" | yq '.days    // 3650')
+    SUBJECT=$(echo "$ITEM" | yq '.subject')
+    OVERWRITE=$(echo "$ITEM" | yq '.overwrite // "false"')
+    CA_KEY_PATH=$(echo  "$ITEM" | yq '.["ca-key"]')
+    CA_CERT_PATH=$(echo "$ITEM" | yq '.["ca-cert"]')
+
+    for required in SUBJECT CA_KEY_PATH CA_CERT_PATH; do
+      if [ -z "${!required}" ] || [ "${!required}" = "null" ]; then
+        echo "::error::mtls-ca requires 'subject', 'ca-key', and 'ca-cert'."
+        exit 1
+      fi
+    done
+
+    # The CA private key must never live under a broadcast namespace ('common'),
+    # because the deploy workflow injects {env}--common into every service.
+    if [ "${CA_KEY_PATH%%/*}" = "common" ]; then
+      echo "::error::Refusing to store CA private key under 'common/' — that namespace is broadcast to every service by the deploy workflow. Omit the prefix to use the repo namespace, or pick a dedicated one (e.g. 'pki/')."
+      exit 1
+    fi
+
+    read -r CA_KEY_SECRET  CA_KEY_JKEY  <<< "$(resolve_path "$CA_KEY_PATH")"
+    read -r CA_CERT_SECRET CA_CERT_JKEY <<< "$(resolve_path "$CA_CERT_PATH")"
+
+    # Detect existence on the private-key slot only; the cert always travels with it.
+    fetch_secret "$CA_KEY_SECRET"
+    if [ "$OVERWRITE" != "true" ] && \
+       echo "${PENDING[$CA_KEY_SECRET]}" | jq -e --arg k "$CA_KEY_JKEY" 'has($k)' >/dev/null 2>&1; then
+      echo "::notice::Root CA '$CA_KEY_PATH' already exists — skipping. Set overwrite: true to rotate (every leaf must then be rotated too)."
+      continue
+    fi
+
+    CA_DIR=$(mktemp -d)
+    openssl genrsa -out "$CA_DIR/ca.key" "$LENGTH" &>/dev/null
+    openssl req -x509 -new -nodes -key "$CA_DIR/ca.key" -sha256 -days "$DAYS" \
+      -subj "$SUBJECT" -out "$CA_DIR/ca.crt" &>/dev/null
+    CA_KEY=$(cat "$CA_DIR/ca.key")
+    CA_CRT=$(cat "$CA_DIR/ca.crt")
+    rm -rf "$CA_DIR"
+    mask_value "$CA_KEY"
+
+    stage_update "$CA_KEY_SECRET"  "$CA_KEY_JKEY"  "$CA_KEY" "$OVERWRITE"
+    stage_update "$CA_CERT_SECRET" "$CA_CERT_JKEY" "$CA_CRT" "$OVERWRITE"
+
+  # ── mtls-cert ─────────────────────────────────────────────────────────────
+  # Issues a leaf certificate signed by an existing root CA stored in KV, or
+  # (with role: distribute-ca) copies the CA cert into a target location.
+  #
+  #   role: client          → leaf with extendedKeyUsage=clientAuth (default)
+  #   role: server          → leaf with extendedKeyUsage=serverAuth
+  #   role: distribute-ca   → copy ca-cert-from into cert-out (no keypair gen)
+  elif [ "$(echo "$ITEM" | yq 'has("mtls-cert")')" = "true" ]; then
+    ROLE=$(echo "$ITEM" | yq '.role // "client"')
+    OVERWRITE=$(echo "$ITEM" | yq '.overwrite // "false"')
+
+    CA_CERT_FROM=$(echo "$ITEM" | yq '.["ca-cert-from"]')
+    if [ -z "$CA_CERT_FROM" ] || [ "$CA_CERT_FROM" = "null" ]; then
+      echo "::error::mtls-cert requires 'ca-cert-from'."
+      exit 1
+    fi
+    read -r CA_CRT_SRC_SECRET CA_CRT_SRC_KEY <<< "$(resolve_path "$CA_CERT_FROM")"
+    fetch_secret "$CA_CRT_SRC_SECRET"
+    CA_CRT=$(echo "${PENDING[$CA_CRT_SRC_SECRET]}" | jq -r --arg k "$CA_CRT_SRC_KEY" '.[$k] // empty')
+    if [ -z "$CA_CRT" ]; then
+      echo "::error::CA cert not found at '$CA_CERT_FROM'. Run an 'mtls-ca' entry earlier in the list or seed the CA first."
+      exit 1
+    fi
+
+    # Plain CA-cert distribution — no keygen, no signing.
+    if [ "$ROLE" = "distribute-ca" ]; then
+      CERT_OUT=$(echo "$ITEM" | yq '.["cert-out"]')
+      if [ -z "$CERT_OUT" ] || [ "$CERT_OUT" = "null" ]; then
+        echo "::error::mtls-cert role 'distribute-ca' requires 'cert-out'."
+        exit 1
+      fi
+      read -r CO_SECRET CO_JKEY <<< "$(resolve_path "$CERT_OUT")"
+      stage_update "$CO_SECRET" "$CO_JKEY" "$CA_CRT" "$OVERWRITE"
+      continue
+    fi
+
+    case "$ROLE" in
+      server) EKU="serverAuth" ;;
+      client) EKU="clientAuth" ;;
+      *) echo "::error::Unsupported mtls-cert role '$ROLE' — use 'client', 'server', or 'distribute-ca'."; exit 1 ;;
+    esac
+
+    CA_KEY_FROM=$(echo "$ITEM" | yq '.["ca-key-from"]')
+    SUBJECT=$(echo    "$ITEM" | yq '.subject')
+    SAN=$(echo        "$ITEM" | yq '.san // ""')
+    LENGTH=$(echo     "$ITEM" | yq '.length // 4096')
+    DAYS=$(echo       "$ITEM" | yq '.days // 500')
+    CERT_OUT=$(echo   "$ITEM" | yq '.["cert-out"]')
+    KEY_OUT=$(echo    "$ITEM" | yq '.["key-out"]')
+    CA_CERT_OUT=$(echo "$ITEM" | yq '.["ca-cert-out"] // ""')
+
+    for required in CA_KEY_FROM SUBJECT CERT_OUT KEY_OUT; do
+      if [ -z "${!required}" ] || [ "${!required}" = "null" ]; then
+        echo "::error::mtls-cert (role $ROLE) requires 'ca-key-from', 'subject', 'cert-out', and 'key-out'."
+        exit 1
+      fi
+    done
+
+    read -r CA_KEY_SRC_SECRET CA_KEY_SRC_KEY <<< "$(resolve_path "$CA_KEY_FROM")"
+    fetch_secret "$CA_KEY_SRC_SECRET"
+    CA_KEY=$(echo "${PENDING[$CA_KEY_SRC_SECRET]}" | jq -r --arg k "$CA_KEY_SRC_KEY" '.[$k] // empty')
+    if [ -z "$CA_KEY" ]; then
+      echo "::error::CA private key not found at '$CA_KEY_FROM'."
+      exit 1
+    fi
+
+    read -r LEAF_CRT_SECRET LEAF_CRT_JKEY <<< "$(resolve_path "$CERT_OUT")"
+    read -r LEAF_KEY_SECRET LEAF_KEY_JKEY <<< "$(resolve_path "$KEY_OUT")"
+
+    # Distribute the CA cert alongside the leaf, even when the leaf is skipped.
+    distribute_ca_cert_out() {
+      if [ -n "$CA_CERT_OUT" ] && [ "$CA_CERT_OUT" != "null" ]; then
+        local s k
+        read -r s k <<< "$(resolve_path "$CA_CERT_OUT")"
+        stage_update "$s" "$k" "$CA_CRT" "$OVERWRITE"
+      fi
+    }
+
+    fetch_secret "$LEAF_KEY_SECRET"
+    if [ "$OVERWRITE" != "true" ] && \
+       echo "${PENDING[$LEAF_KEY_SECRET]}" | jq -e --arg k "$LEAF_KEY_JKEY" 'has($k)' >/dev/null 2>&1; then
+      echo "::notice::Leaf cert key '$KEY_OUT' already exists — skipping issuance. Set overwrite: true to rotate."
+      distribute_ca_cert_out
+      continue
+    fi
+
+    LEAF_DIR=$(mktemp -d)
+    printf '%s\n' "$CA_KEY" > "$LEAF_DIR/ca.key"
+    printf '%s\n' "$CA_CRT" > "$LEAF_DIR/ca.crt"
+    openssl genrsa -out "$LEAF_DIR/leaf.key" "$LENGTH" &>/dev/null
+
+    if [ -n "$SAN" ] && [ "$SAN" != "null" ]; then
+      EXT=$(printf 'subjectAltName=%s\nextendedKeyUsage=%s' "$SAN" "$EKU")
+    else
+      EXT=$(printf 'extendedKeyUsage=%s' "$EKU")
+    fi
+
+    openssl req -new -sha256 -key "$LEAF_DIR/leaf.key" -subj "$SUBJECT" \
+      -reqexts v3_req \
+      -config <(cat /etc/ssl/openssl.cnf <(printf "\n[v3_req]\n%s\n" "$EXT")) \
+      -out "$LEAF_DIR/leaf.csr" &>/dev/null
+
+    openssl x509 -req -in "$LEAF_DIR/leaf.csr" \
+      -CA "$LEAF_DIR/ca.crt" -CAkey "$LEAF_DIR/ca.key" -CAcreateserial \
+      -extfile <(printf "%s\n" "$EXT") \
+      -out "$LEAF_DIR/leaf.crt" -days "$DAYS" -sha256 &>/dev/null
+
+    LEAF_KEY=$(cat "$LEAF_DIR/leaf.key")
+    LEAF_CRT=$(cat "$LEAF_DIR/leaf.crt")
+    rm -rf "$LEAF_DIR"
+    mask_value "$LEAF_KEY"
+
+    stage_update "$LEAF_CRT_SECRET" "$LEAF_CRT_JKEY" "$LEAF_CRT" "$OVERWRITE"
+    stage_update "$LEAF_KEY_SECRET" "$LEAF_KEY_JKEY" "$LEAF_KEY" "$OVERWRITE"
+    distribute_ca_cert_out
   fi
 done
 
