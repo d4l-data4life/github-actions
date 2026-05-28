@@ -51,6 +51,15 @@ set -euo pipefail
 declare -A FETCHED
 declare -A PENDING
 
+# Mask every non-empty line of a value so multiline secrets (e.g. PEM keys)
+# don't leak to the log. The ::add-mask:: command only covers a single line.
+mask_value() {
+  local value="$1"
+  while IFS= read -r line; do
+    if [ -n "$line" ]; then echo "::add-mask::$line"; fi
+  done <<< "$value"
+}
+
 # Resolve "[namespace/]KEY" → prints "<kv-secret-name> <json-key>" on one line.
 resolve_path() {
   local path="$1"
@@ -122,8 +131,9 @@ for i in $(seq 0 $((COUNT - 1))); do
 
     PRIVATE_KEY=$(cat "$KEY_DIR/private.pem")
     PUBLIC_KEY=$(cat  "$KEY_DIR/public.pem")
-    echo "::add-mask::$PRIVATE_KEY"
     rm -rf "$KEY_DIR"
+    mask_value "$PRIVATE_KEY"
+    mask_value "$PUBLIC_KEY"
 
     stage_update "$PRIV_SECRET" "$PRIV_JSON_KEY" "$PRIVATE_KEY" "$OVERWRITE"
 
