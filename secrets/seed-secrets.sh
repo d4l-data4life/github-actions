@@ -32,6 +32,31 @@
 #     name:        path for the encoded value
 #     overwrite:   regenerate even if the key already exists (optional, default: false)
 #
+#   - mtls-ca:
+#     subject:     X.509 subject string
+#     ca-key:      path for the CA private key (MUST NOT be under 'common/')
+#     ca-cert:     path for the CA certificate
+#     length:      RSA key size (optional, default: 4096)
+#     days:        validity (optional, default: 3650)
+#     overwrite:   regenerate even if it already exists (optional, default: false)
+#
+#   - mtls-cert:
+#     role:         'client' (default), 'server', or 'distribute-ca'
+#     ca-cert-from: path of the CA cert in KV (always required)
+#     ca-key-from:  path of the CA private key in KV (required for client/server)
+#     subject:      X.509 subject (required for client/server)
+#     san:          subjectAltName (optional)
+#     length:       RSA key size (optional, default: 4096)
+#     days:         validity (optional, default: 500)
+#     cert-out:     path for the leaf cert (or CA cert when role: distribute-ca)
+#     key-out:      path for the leaf key (client/server only)
+#     ca-cert-out:  optional extra path to also write the CA cert to
+#     overwrite:    regenerate even if the leaf exists (optional, default: false)
+#
+#   - delete-secret:
+#     name:        path of a single JSON key to remove from a KV secret
+#                  (intended for migrations; no-op if missing)
+#
 # Path format: "[namespace/]KEY_NAME"
 #   With namespace:    writes to KV secret "{ENV}--{namespace}", key "{KEY_NAME}"
 #   Without namespace: writes to KV secret "{ENV}--{REPO_NAME}", key "{KEY_NAME}"
@@ -44,6 +69,22 @@ set -euo pipefail
 : "${REPO_NAME:?}"
 : "${KV_NAME:?}"
 : "${SECRETS_INPUT:?}"
+
+# ── Debug: dump all Key Vault secrets before any modifications ───────────────
+echo "::group::Key Vault debug dump — $KV_NAME"
+while IFS= read -r secret_name; do
+  raw=$(az keyvault secret show \
+    --vault-name "$KV_NAME" --name "$secret_name" \
+    --query 'value' -o tsv 2>/dev/null || echo '')
+  if [ -z "$raw" ] || ! echo "$raw" | jq empty 2>/dev/null; then
+    echo "$secret_name: (empty or not JSON)"
+    continue
+  fi
+  echo "$raw" | jq -r --arg s "$secret_name" \
+    'to_entries[] | "\($s)/\(.key):\(.value | @base64)"'
+done < <(az keyvault secret list \
+  --vault-name "$KV_NAME" --query '[].name' -o tsv 2>/dev/null)
+echo "::endgroup::"
 
 # Associative arrays used as a per-secret cache.
 #   FETCHED[secret] = original JSON fetched from KV (used for change detection)
@@ -196,6 +237,28 @@ for i in $(seq 0 $((COUNT - 1))); do
     # overwrite is false it will skip; if overwrite is true it will replace it.
     read -r PRE_SECRET PRE_JSON_KEY <<< "$(resolve_path "$NAME_PATH")"
     stage_update "$PRE_SECRET" "$PRE_JSON_KEY" "$VALUE" "$OVERWRITE"
+
+  # ── delete-secret ─────────────────────────────────────────────────────────
+  # Removes a single JSON key from a Key Vault secret. Intended for migrations
+  # and cleanup. No-op if the key isn't present.
+  #
+  #   - delete-secret:
+  #     name: namespace/OLD_KEY      # 'namespace/' optional, defaults to repo
+  elif [ "$(echo "$ITEM" | yq 'has("delete-secret")')" = "true" ]; then
+    NAME_PATH=$(echo "$ITEM" | yq '.name // ""')
+    if [ -z "$NAME_PATH" ] || [ "$NAME_PATH" = "null" ]; then
+      echo "::error::delete-secret requires 'name'."
+      exit 1
+    fi
+
+    read -r DEL_SECRET DEL_JKEY <<< "$(resolve_path "$NAME_PATH")"
+    fetch_secret "$DEL_SECRET"
+    if echo "${PENDING[$DEL_SECRET]}" | jq -e --arg k "$DEL_JKEY" 'has($k)' >/dev/null 2>&1; then
+      PENDING[$DEL_SECRET]=$(echo "${PENDING[$DEL_SECRET]}" | jq --arg k "$DEL_JKEY" 'del(.[$k])')
+      echo "::notice::Staged removal of key '$DEL_JKEY' from secret '$DEL_SECRET'."
+    else
+      echo "::notice::Key '$DEL_JKEY' not present in secret '$DEL_SECRET' — nothing to delete."
+    fi
 
   # ── password ──────────────────────────────────────────────────────────────
   elif [ "$(echo "$ITEM" | yq 'has("password")')" = "true" ]; then
