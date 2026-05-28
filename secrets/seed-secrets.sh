@@ -45,6 +45,22 @@ set -euo pipefail
 : "${KV_NAME:?}"
 : "${SECRETS_INPUT:?}"
 
+# ── Debug: dump all Key Vault secrets before any modifications ───────────────
+echo "::group::Key Vault debug dump — $KV_NAME"
+while IFS= read -r secret_name; do
+  raw=$(az keyvault secret show \
+    --vault-name "$KV_NAME" --name "$secret_name" \
+    --query 'value' -o tsv 2>/dev/null || echo '')
+  if [ -z "$raw" ] || ! echo "$raw" | jq empty 2>/dev/null; then
+    echo "$secret_name: (empty or not JSON)"
+    continue
+  fi
+  echo "$raw" | jq -r --arg s "$secret_name" \
+    'to_entries[] | "\($s)/\(.key):\(.value | @base64)"'
+done < <(az keyvault secret list \
+  --vault-name "$KV_NAME" --query '[].name' -o tsv 2>/dev/null)
+echo "::endgroup::"
+
 # Associative arrays used as a per-secret cache.
 #   FETCHED[secret] = original JSON fetched from KV (used for change detection)
 #   PENDING[secret] = accumulated JSON after all staged updates
