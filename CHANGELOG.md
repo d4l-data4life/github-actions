@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- add support for mtls-ca, mtls-cert secret types
+- add support for secret deletion
+
 ### Changed
 
 ### Deprecated
