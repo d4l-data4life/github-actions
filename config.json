@@ -13,6 +13,13 @@
         "backend_cert_name": "airms-{environment}-appgw-backend-cert",
         "postgres_hostname": "airms-{environment}-app-pg.postgres.database.azure.com"
       },
+      "demo": {
+        "resource_group": "rg-airms-dev",
+        "cluster_name": "airms-dev-app-k8s-cluster",
+        "key_vault_name": "airms-dev-app-kv",
+        "backend_cert_name": "airms-dev-appgw-backend-cert",
+        "postgres_hostname": "airms-dev-app-pg.postgres.database.azure.com"
+      },
       "dev-pub": {
         "resource_group": "rg-airms-{environment}",
         "cluster_name": "airms-{environment}-app-k8s-cluster",
