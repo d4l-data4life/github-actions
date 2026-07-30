@@ -17,9 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- add missing postgres hostname to sensorhub config
-
 ### Security
+
+## [v1.7.1] - 2026-07-30
+
+### Fixed
+
+- add missing postgres hostname to sensorhub config
 
 ## [v1.7.0] - 2026-07-15
 
@@ -90,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.1.0] - 2025-06-29
 
-[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.7.1...HEAD
+[v1.7.1]: https://github.com/d4l-data4life/github-actions/compare/v1.7.0...v1.7.1
 [v1.7.0]: https://github.com/d4l-data4life/github-actions/compare/v1.6.0...v1.7.0
 [v1.6.0]: https://github.com/d4l-data4life/github-actions/compare/v1.5.0...v1.6.0
 [v1.5.0]: https://github.com/d4l-data4life/github-actions/compare/v1.4.0...v1.5.0
