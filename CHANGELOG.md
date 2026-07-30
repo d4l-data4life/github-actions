@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- use FQDN for postgres hostname in sensorhub config
+
 ### Security
 
 ## [v1.7.1] - 2026-07-30

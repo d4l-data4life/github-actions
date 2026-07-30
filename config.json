@@ -3,7 +3,7 @@
     "resource_group": "rg-sensorhub-{environment}",
     "cluster_name": "k8s-sensorhub-{environment}",
     "key_vault_name": "kv-sensorhub",
-    "postgres_hostname": "pg-sensorhub-{environment}"
+    "postgres_hostname": "pg-sensorhub-{environment}.postgres.database.azure.com"
   },
   "airms": {
     "environments": {
