@@ -15,6 +15,12 @@
 #     public-key:  path for the public key   (e.g. common/MY_PUBLIC_KEY)
 #     overwrite:   regenerate even if the private key already exists (optional, default: false)
 #
+#   - ec-key:
+#     curve:       EC curve — 'P-256' (default), 'P-384' or 'P-521'
+#     private-key: path for the private key, PKCS#8 PEM (e.g. MY_SIGNING_KEY)
+#     public-key:  path for the public key, SPKI PEM (optional)
+#     overwrite:   regenerate even if the private key already exists (optional, default: false)
+#
 #   - password:
 #     length:      password length in characters (optional, default: 20)
 #     name:        path for the password value   (e.g. common/MY_PASSWORD)
@@ -164,6 +170,49 @@ for i in $(seq 0 $((COUNT - 1))); do
 
     read -r PUB_SECRET PUB_JSON_KEY <<< "$(resolve_path "$PUBLIC_KEY_PATH")"
     stage_update "$PUB_SECRET" "$PUB_JSON_KEY" "$PUBLIC_KEY" "$OVERWRITE"
+
+  # ── ec-key ────────────────────────────────────────────────────────────────
+  elif [ "$(echo "$ITEM" | yq 'has("ec-key")')" = "true" ]; then
+    CURVE=$(echo "$ITEM" | yq '.curve // "P-256"')
+    OVERWRITE=$(echo "$ITEM" | yq '.overwrite // "false"')
+    PRIVATE_KEY_PATH=$(echo "$ITEM" | yq '.["private-key"]')
+    PUBLIC_KEY_PATH=$(echo  "$ITEM" | yq '.["public-key"] // ""')
+
+    case "$CURVE" in
+      P-256) OPENSSL_CURVE=prime256v1 ;;
+      P-384) OPENSSL_CURVE=secp384r1 ;;
+      P-521) OPENSSL_CURVE=secp521r1 ;;
+      *) echo "::error::ec-key: unsupported curve '$CURVE' (use P-256, P-384 or P-521)"; exit 1 ;;
+    esac
+
+    read -r PRIV_SECRET PRIV_JSON_KEY <<< "$(resolve_path "$PRIVATE_KEY_PATH")"
+
+    fetch_secret "$PRIV_SECRET"
+    if [ "$OVERWRITE" != "true" ] && \
+       echo "${PENDING[$PRIV_SECRET]}" | jq -e --arg k "$PRIV_JSON_KEY" 'has($k)' >/dev/null 2>&1; then
+      echo "::notice::EC key '$PRIV_JSON_KEY' in secret '$PRIV_SECRET' already exists — skipping. Set overwrite: true to regenerate."
+      continue
+    fi
+
+    # PKCS#8 ("BEGIN PRIVATE KEY") so every consumer can parse it with a standard loader.
+    KEY_DIR=$(mktemp -d)
+    openssl genpkey -out "$KEY_DIR/private.pem" -algorithm EC \
+      -pkeyopt "ec_paramgen_curve:${OPENSSL_CURVE}" -pkeyopt ec_param_enc:named_curve &>/dev/null
+    openssl pkey -pubout -inform pem -outform pem \
+      -in "$KEY_DIR/private.pem" -out "$KEY_DIR/public.pem" &>/dev/null
+
+    PRIVATE_KEY=$(cat "$KEY_DIR/private.pem")
+    PUBLIC_KEY=$(cat  "$KEY_DIR/public.pem")
+    rm -rf "$KEY_DIR"
+    mask_value "$PRIVATE_KEY"
+    mask_value "$PUBLIC_KEY"
+
+    stage_update "$PRIV_SECRET" "$PRIV_JSON_KEY" "$PRIVATE_KEY" "$OVERWRITE"
+
+    if [ -n "$PUBLIC_KEY_PATH" ]; then
+      read -r PUB_SECRET PUB_JSON_KEY <<< "$(resolve_path "$PUBLIC_KEY_PATH")"
+      stage_update "$PUB_SECRET" "$PUB_JSON_KEY" "$PUBLIC_KEY" "$OVERWRITE"
+    fi
 
   # ── random ────────────────────────────────────────────────────────────────
   elif [ "$(echo "$ITEM" | yq 'has("random")')" = "true" ]; then

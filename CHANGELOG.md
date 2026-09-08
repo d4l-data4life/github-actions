@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- secrets: `ec-key` type generating an EC private key (P-256 by default, PKCS#8 PEM) with an optional public key — e.g. for JWT signing keys
+
 ### Changed
 
 ### Deprecated
