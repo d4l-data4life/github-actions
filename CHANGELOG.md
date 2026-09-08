@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- secrets: `ec-key` type generating an EC private key (P-256 by default, PKCS#8 PEM) with an optional public key — e.g. for JWT signing keys
-
 ### Changed
 
 ### Deprecated
@@ -20,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## [v1.8.0] - 2026-09-08
+
+### Added
+
+- secrets: `ec-key` type generating an EC private key (P-256 by default, PKCS#8 PEM) with an optional public key — e.g. for JWT signing keys
 
 ## [v1.7.2] - 2026-07-30
 
@@ -102,7 +106,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.1.0] - 2025-06-29
 
-[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.7.2...HEAD
+[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.8.0...HEAD
+[v1.8.0]: https://github.com/d4l-data4life/github-actions/compare/v1.7.2...v1.8.0
 [v1.7.2]: https://github.com/d4l-data4life/github-actions/compare/v1.7.1...v1.7.2
 [v1.7.1]: https://github.com/d4l-data4life/github-actions/compare/v1.7.0...v1.7.1
 [v1.7.0]: https://github.com/d4l-data4life/github-actions/compare/v1.6.0...v1.7.0
