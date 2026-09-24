@@ -16,7 +16,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
@@ -57,13 +57,13 @@ runs:
 
     - name: Azure CLI login
       if: ${{ inputs.azure-credentials != '' }}
-      uses: azure/login@v2
+      uses: azure/login@v3.0.0
       with:
         creds: ${{ inputs.azure-credentials }}
 
     - name: Set up kubelogin for non-interactive login
       if: ${{ inputs.kubeconfig == '' }}
-      uses: azure/use-kubelogin@v1
+      uses: azure/use-kubelogin@v1.3
       with:
         kubelogin-version: v0.0.30
 
@@ -79,7 +79,7 @@ runs:
         chmod 600 "$RUNNER_TEMP/kube-deploy/.kube/config"
         echo "KUBECONFIG=$RUNNER_TEMP/kube-deploy/.kube/config" >> "$GITHUB_ENV"
 
-    - uses: azure/aks-set-context@v3
+    - uses: azure/aks-set-context@v5.0.0
       if: ${{ inputs.kubeconfig == '' }}
       with:
         resource-group: ${{ env.RESOURCE_GROUP }}

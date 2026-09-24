@@ -56,10 +56,10 @@ runs:
       if: ${{ inputs.disable-docker-cache != 'true' && inputs.docker-cache-registry != '' }}
 
     - name: Setup GitHub Action Docker cache
-      uses: crazy-max/ghaction-github-runtime@v3
+      uses: crazy-max/ghaction-github-runtime@v4
 
     - name: Boot a buildx builder (docker cache registry)
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
       with:
         driver-opts: network=host
         buildkitd-config-inline: |
@@ -69,7 +69,7 @@ runs:
       if: ${{ inputs.disable-docker-cache != 'true' && inputs.docker-cache-registry != '' }}
 
     - name: Boot a buildx builder
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
       with:
         driver-opts: network=host
       if: ${{ inputs.disable-docker-cache != 'true' && inputs.docker-cache-registry == '' }}
@@ -80,7 +80,7 @@ runs:
       if: ${{ inputs.run-code-gen == 'true' }}
 
     - name: Setup Go
-      uses: actions/setup-go@v6.1.0
+      uses: actions/setup-go@v6.2.0
       with:
         go-version-file: go.mod
       if: ${{ inputs.setup-go == 'true' }}
@@ -91,7 +91,7 @@ runs:
       if: ${{ inputs.setup-go == 'true' }}
 
     - name: Setup Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: ${{ inputs.node-version }}
         cache: npm
@@ -104,7 +104,7 @@ runs:
       if: ${{ inputs.setup-node == 'true' }}
 
     - name: Setup Yarn
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: ${{ inputs.node-version }}
         cache: yarn
@@ -116,15 +116,27 @@ runs:
       run: yarn --frozen-lockfile
       if: ${{ inputs.setup-yarn == 'true' }}
 
+    # pnpm/action-setup v4 fails if `version` is set and differs from packageManager in package.json
+    - name: Resolve pnpm version
+      id: pnpm-version
+      shell: bash
+      run: |
+        if grep -qE '"packageManager": *"pnpm@' package.json 2>/dev/null; then
+          echo "version=" >> "$GITHUB_OUTPUT"
+        else
+          echo "version=10" >> "$GITHUB_OUTPUT"
+        fi
+      if: ${{ inputs.setup-pnpm == 'true' }}
+
     - name: Install pnpm
-      uses: pnpm/action-setup@v3
+      uses: pnpm/action-setup@v4.4.0
       with:
-        version: 10
+        version: ${{ steps.pnpm-version.outputs.version }}
         run_install: false
       if: ${{ inputs.setup-pnpm == 'true' }}
 
     - name: Setup pnpm
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm
@@ -154,7 +166,7 @@ runs:
       if: ${{ inputs.azure-credentials != '' }}
 
     - name: Log into registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4.0.0
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ env.REGISTRY_USERNAME }}
@@ -162,7 +174,7 @@ runs:
       if: ${{ inputs.acr-login == 'true' }}
 
     - name: Azure CLI login
-      uses: azure/login@v2
+      uses: azure/login@v3.0.0
       with:
         creds: ${{ inputs.azure-credentials }}
       if: ${{ inputs.signing-key-passphrase != '' }}
