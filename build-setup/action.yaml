@@ -80,7 +80,7 @@ runs:
       if: ${{ inputs.run-code-gen == 'true' }}
 
     - name: Setup Go
-      uses: actions/setup-go@v6.1.0
+      uses: actions/setup-go@v6.2.0
       with:
         go-version-file: go.mod
       if: ${{ inputs.setup-go == 'true' }}
@@ -117,7 +117,7 @@ runs:
       if: ${{ inputs.setup-yarn == 'true' }}
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v3
+      uses: pnpm/action-setup@v4.4.0
       with:
         version: 10
         run_install: false
@@ -154,7 +154,7 @@ runs:
       if: ${{ inputs.azure-credentials != '' }}
 
     - name: Log into registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4.0.0
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ env.REGISTRY_USERNAME }}
@@ -162,7 +162,7 @@ runs:
       if: ${{ inputs.acr-login == 'true' }}
 
     - name: Azure CLI login
-      uses: azure/login@v2
+      uses: azure/login@v3.0.0
       with:
         creds: ${{ inputs.azure-credentials }}
       if: ${{ inputs.signing-key-passphrase != '' }}

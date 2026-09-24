@@ -20,7 +20,7 @@ runs:
   using: "composite"
   steps:
   - name: Azure CLI login
-    uses: azure/login@v1
+    uses: azure/login@v3.0.0
     with:
       creds: ${{ inputs.azure-credentials }}
 
