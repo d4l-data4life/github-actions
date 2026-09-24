@@ -116,10 +116,22 @@ runs:
       run: yarn --frozen-lockfile
       if: ${{ inputs.setup-yarn == 'true' }}
 
+    # pnpm/action-setup v4 fails if `version` is set and differs from packageManager in package.json
+    - name: Resolve pnpm version
+      id: pnpm-version
+      shell: bash
+      run: |
+        if grep -qE '"packageManager": *"pnpm@' package.json 2>/dev/null; then
+          echo "version=" >> "$GITHUB_OUTPUT"
+        else
+          echo "version=10" >> "$GITHUB_OUTPUT"
+        fi
+      if: ${{ inputs.setup-pnpm == 'true' }}
+
     - name: Install pnpm
       uses: pnpm/action-setup@v4.4.0
       with:
-        version: 10
+        version: ${{ steps.pnpm-version.outputs.version }}
         run_install: false
       if: ${{ inputs.setup-pnpm == 'true' }}
 
