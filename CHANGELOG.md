@@ -11,8 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Bump versions for Node 24 runner compatibility
-
 ### Deprecated
 
 ### Removed
@@ -20,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## [v1.9.0] - 2026-09-24
+
+### Changed
+
+- Bump versions for Node 24 runner compatibility
 
 ## [v1.8.0] - 2026-09-08
 
@@ -108,7 +112,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.1.0] - 2025-06-29
 
-[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.9.0...HEAD
+[v1.9.0]: https://github.com/d4l-data4life/github-actions/compare/v1.8.0...v1.9.0
 [v1.8.0]: https://github.com/d4l-data4life/github-actions/compare/v1.7.2...v1.8.0
 [v1.7.2]: https://github.com/d4l-data4life/github-actions/compare/v1.7.1...v1.7.2
 [v1.7.1]: https://github.com/d4l-data4life/github-actions/compare/v1.7.0...v1.7.1
