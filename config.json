@@ -53,6 +53,20 @@
       }
     }
   },
+  "airms-runners": {
+    "environments": {
+      "dev": {
+        "resource_group": "rg-airms-dev",
+        "cluster_name": "airms-dev-github-runners-k8s-cluster",
+        "key_vault_name": "airms-dev-app-kv"
+      },
+      "prod": {
+        "resource_group": "mshsclinrsrch01-airms-shared-rgp",
+        "cluster_name": "airms-shared-github-runners-k8s-cluster",
+        "key_vault_name": "airms-app-kv"
+      }
+    }
+  },
   "office-ber": {
     "resource_group": "rg-office-ber",
     "key_vault_name": "office-ber-{environment}-kv",
