@@ -179,3 +179,78 @@ jobs:
           environment: ${{ inputs.environment }}
           azure-credentials: ${{ secrets.AZURE_CI_CREDENTIALS }}
 ```
+
+### secrets
+
+Create or update secrets for a repository in Azure Key Vault.
+
+Capabilities:
+
+- login to Azure and read the Key Vault name for the project/environment from `config.json`
+- [db-secrets] create the database secret `<environment>--db--<repository>` consumed by `database` and `deploy`
+  - `auto` generates all values (`DBName`/`username` = repository name, `DBSchema` = `public`, `Hostname` from config, `Port` = `5432`, random 24 character `password`)
+  - a YAML list overrides individual fields, add `- overwrite: true` to regenerate an existing secret
+  - `- Hostname: <host>` replaces `postgres_hostname` from `config.json` (required if the project/environment has none configured)
+- [secrets] generate and store secrets described by a YAML list, each item selecting a type:
+  - `rsa-key` / `ec-key`: key pair (private key and optional public key)
+  - `password`: random alphanumeric password
+  - `random`: random bytes, `hex` or `base64` encoded
+  - `preset`: store a value passed in via one of the generic slots `secret-1` … `secret-5`
+  - `delete-secret`: remove a single key (for migrations and cleanup)
+  - `mtls-ca` / `mtls-cert`: create a CA and issue client/server certificates signed by it, or distribute the CA certificate
+- existing values are skipped unless `overwrite: true` is set on the item
+
+Secret paths have the form `[namespace/]KEY_NAME`.
+The namespace maps to the Key Vault secret `<environment>--<namespace>` and defaults to `<environment>--<repository>`, `KEY_NAME` is the JSON key within that secret.
+The full list of options per type is documented in [secrets/action.yaml](secrets/action.yaml).
+
+:warning: Everything under `common/` is injected into every service by `deploy`, therefore CA private keys are refused there.
+Pass preset values via `with: secret-N: ${{ secrets.* }}` and never via `env:`, as `env:` values are logged in plaintext.
+
+| Inputs              | Required | Default   | Description                                                        |
+| ------------------- | -------- | --------- | ------------------------------------------------------------------ |
+| project             | false    | sensorhub | Project key from `config.json`                                     |
+| environment         | true     | dev       | dev/staging/prod                                                   |
+| azure-credentials   | true     |           | Credentials for azure cli login in JSON format                     |
+| db-secrets          | false    | ""        | `auto` or YAML list of field overrides for the database secret     |
+| secrets             | false    | ""        | YAML list of secrets to generate and store                         |
+| secret-1 … secret-5 | false    | ""        | Generic slots for preset values, referenced via `from-input`       |
+
+Use by creating a `.github/workflows/secrets.yaml`
+
+```YAML
+name: Seed Secrets
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Environment
+        default: dev
+        options:
+          - dev
+          - staging
+          - prod
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: gesundheitscloud/github-actions/secrets@main
+        with:
+          project: sensorhub
+          environment: ${{ inputs.environment }}
+          azure-credentials: ${{ secrets.AZURE_CI_CREDENTIALS }}
+          db-secrets: auto
+          secret-1: ${{ secrets.FIREBASE_CREDENTIALS }}
+          secrets: |
+            - rsa-key: true
+              private-key: JWT_PRIVATE_KEY
+              public-key: common/JWT_PUBLIC_KEY
+            - password: true
+              name: API_PASSWORD
+            - preset: true
+              from-input: secret-1
+              name: common/FIREBASE_CREDENTIALS
+```

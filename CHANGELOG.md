@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- secrets: `Hostname` override in `db-secrets` now takes precedence over `postgres_hostname` from `config.json` and also works for projects/environments without a configured hostname
+
 ### Changed
 
 ### Deprecated
