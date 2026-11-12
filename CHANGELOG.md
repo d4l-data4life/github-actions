@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- secrets: `Hostname` override in `db-secrets` now takes precedence over `postgres_hostname` from `config.json` and also works for projects/environments without a configured hostname
-
 ### Changed
 
 ### Deprecated
@@ -20,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## [v1.10.1] - 2026-11-12
+
+### Added
+
+- secrets: `Hostname` override in `db-secrets` now takes precedence over `postgres_hostname` from `config.json` and also works for projects/environments without a configured hostname
 
 ## [v1.10.0] - 2026-10-20
 
@@ -120,7 +124,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.1.0] - 2025-06-29
 
-[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/d4l-data4life/github-actions/compare/v1.10.1...HEAD
+[v1.10.1]: https://github.com/d4l-data4life/github-actions/compare/v1.10.0...v1.10.1
 [v1.10.0]: https://github.com/d4l-data4life/github-actions/compare/v1.9.0...v1.10.0
 [v1.9.0]: https://github.com/d4l-data4life/github-actions/compare/v1.8.0...v1.9.0
 [v1.8.0]: https://github.com/d4l-data4life/github-actions/compare/v1.7.2...v1.8.0
